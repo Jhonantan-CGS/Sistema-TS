@@ -336,7 +336,7 @@
 
         function clearSign(id) { pads[id].clear(); }
 
-        // --- INTEGRAÇÃO API DO CLIMA (OPENWEATHERMAP) ---
+        // --- INTEGRAÇÃO API DO CLIMA (OPENWEATHERMAP) ATUALIZADA ---
         async function fetchWeatherAPI() {
             const btn = document.getElementById('btnWeather');
             const originalHTML = btn.innerHTML;
@@ -344,8 +344,9 @@
             lucide.createIcons();
 
             if (!navigator.geolocation) {
-                alert("Seu navegador não suporta geolocalização.");
-                btn.innerHTML = originalHTML; return;
+                alert("Seu navegador ou dispositivo não suporta geolocalização.");
+                btn.innerHTML = originalHTML; 
+                return;
             }
 
             navigator.geolocation.getCurrentPosition(async (position) => {
@@ -355,26 +356,41 @@
 
                     const lat = position.coords.latitude;
                     const lon = position.coords.longitude;
-                    const apiKey = "657a68755eff696774778515ccb4ed06";
+                    const apiKey = "657a68755eff696774778515ccb4ed06"; // Sua chave
                     
                     const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=pt_br`);
                     const data = await response.json();
 
-                    // Limpa checks
+                    // Verifica se a API retornou algum erro (ex: Chave inativa ou bloqueada)
+                    if (!response.ok) {
+                        throw new Error(`Erro na API: ${data.message} (Código ${data.cod})`);
+                    }
+
+                    // Limpa os checks anteriores
                     document.querySelectorAll('input[name="clima"]').forEach(cb => cb.checked = false);
 
                     // Análise de Vento (Forte > 8 m/s ou ~28km/h)
-                    if(data.wind.speed > 8) document.getElementById('w_vento_forte').checked = true;
-                    else document.getElementById('w_vento_leve').checked = true;
+                    if(data.wind && data.wind.speed > 8) {
+                        document.getElementById('w_vento_forte').checked = true;
+                    } else {
+                        document.getElementById('w_vento_leve').checked = true;
+                    }
 
                     // Análise de Clima (Céu/Chuva)
                     const id = data.weather[0].id;
                     if(id >= 200 && id < 600) {
-                        if(id === 500 || id === 501 || id === 520 || (id >= 300 && id < 400)) document.getElementById('w_chuva_leve').checked = true;
-                        else document.getElementById('w_chuva_forte').checked = true;
+                        if(id === 500 || id === 501 || id === 520 || (id >= 300 && id < 400)) {
+                            document.getElementById('w_chuva_leve').checked = true;
+                        } else {
+                            document.getElementById('w_chuva_forte').checked = true;
+                        }
                     } 
-                    else if (id === 800) document.getElementById('w_ceu_limpo').checked = true;
-                    else if (id > 800) document.getElementById('w_nublado').checked = true;
+                    else if (id === 800) {
+                        document.getElementById('w_ceu_limpo').checked = true;
+                    } 
+                    else if (id > 800) {
+                        document.getElementById('w_nublado').checked = true;
+                    }
 
                     // Temperatura no campo 'Outro'
                     document.getElementById('chk_clima_outro').checked = true;
@@ -382,16 +398,22 @@
 
                     btn.innerHTML = `<i data-lucide="check" size="14" class="text-green-600"></i> Preenchido!`;
                 } catch (error) {
-                    alert("Erro ao buscar o clima. Verifique a internet.");
+                    // Agora ele vai mostrar exatamente o motivo da falha
+                    alert(error.message || "Erro ao buscar o clima. Verifique a internet.");
+                    console.error("Erro detalhado:", error);
                     btn.innerHTML = originalHTML;
                 } finally {
                     lucide.createIcons();
-                    setTimeout(() => { btn.innerHTML = originalHTML; lucide.createIcons(); }, 3000);
+                    setTimeout(() => { btn.innerHTML = originalHTML; lucide.createIcons(); }, 4000);
                 }
-            }, () => {
-                alert("Permissão de GPS negada. Preencha manualmente.");
+            }, (geoError) => {
+                alert("Falha no GPS: " + geoError.message + " - Ative a localização do celular/navegador.");
                 btn.innerHTML = originalHTML;
                 lucide.createIcons();
+            }, {
+                enableHighAccuracy: true,
+                timeout: 10000, // Aguarda até 10s pelo GPS
+                maximumAge: 0
             });
         }
 
