@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Permissão de Trabalho em Altura (PTA) | Cysy Fertilizantes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+        body { font-family: 'Roboto', sans-serif; background-color: #f8fafc; }
+        
+        .bg-corp-dark { background-color: #0f172a; } 
+        .text-corp-dark { color: #0f172a; }
+        .bg-corp-green { background-color: #16a34a; } 
+        .text-corp-green { color: #16a34a; }
+        .text-corp-yellow { color: #eab308; } 
+        .bg-corp-blue { background-color: #2563eb; }
+        
+        .input-field { width: 100%; border: 1px solid #cbd5e1; padding: 0.75rem; border-radius: 0.5rem; background-color: #ffffff; transition: all 0.2s; font-size: 16px; }
+        .input-field:focus { border-color: #0f172a; outline: none; box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.2); }
+        .input-inline { border-bottom: 1px solid #cbd5e1; outline: none; background: transparent; padding: 0.2rem; font-size: 14px; flex-grow: 1; }
+        .input-inline:focus { border-bottom: 2px solid #0f172a; }
+        
+        .signature-pad { border: 2px dashed #94a3b8; border-radius: 0.5rem; background: white; touch-action: none; width: 100%; height: 180px; }
+        input[type="checkbox"], input[type="radio"] { width: 1.25rem; height: 1.25rem; accent-color: #16a34a; cursor: pointer; flex-shrink: 0; }
+    </style>
+</head>
+<body class="text-slate-800 pb-16">
+
+    <header class="bg-corp-dark text-white p-4 shadow-md sticky top-0 z-50">
+        <div class="container mx-auto max-w-4xl flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-white p-2 rounded-lg">
+                    <i data-lucide="leaf" class="text-corp-green"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg md:text-xl font-bold tracking-wide">Cysy Fertilizantes</h1>
+                    <p class="text-[10px] md:text-xs text-slate-300 uppercase tracking-widest">Permissão de Trabalho em Altura</p>
+                </div>
+            </div>
+            <div class="hidden md:flex flex-col items-end">
+                <span class="text-xs font-bold text-corp-yellow"><i data-lucide="shield-alert" class="inline w-3 h-3"></i> SEGURANÇA</span>
+                <span class="text-xs text-slate-300">NR-35</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-3 md:px-4 mt-6 max-w-4xl space-y-6">
+        
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <h2 class="text-2xl font-bold text-corp-dark mb-2">Permissão de Trabalho em Altura (PTA)</h2>
+            <p class="text-slate-600 text-sm">Formulário para emissão de Permissão de Trabalho em Altura, essencial para garantir a segurança em atividades acima de 2 metros.</p>
+            <p class="text-xs text-red-500 mt-3 font-bold">* Indica uma pergunta obrigatória</p>
+        </div>
+
+        <form id="ptaForm" class="space-y-6">
+            
+            <section class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200">
+                <h3 class="font-bold text-corp-dark border-b-2 border-slate-100 pb-2 mb-4 uppercase text-sm flex items-center gap-2">
+                    <i data-lucide="map-pin"></i> 01. Identificação da Atividade
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="text-sm font-bold text-slate-700">Data e Hora da Emissão <span class="text-red-500">*</span></label>
+                        <div class="flex gap-2">
+                            <input type="date" name="data_emissao" required class="input-field w-3/5">
+                            <input type="time" name="hora_emissao" required class="input-field w-2/5">
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-sm font-bold text-slate-700">Data e Hora do Término <span class="text-red-500">*</span></label>
+                        <div class="flex gap-2">
+                            <input type="date" name="data_termino" required class="input-field w-3/5">
+                            <input type="time" name="hora_termino" required class="input-field w-2/5">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 md:col-span-2">
+                        <div class="space-y-1">
+                            <label class="text-sm font-bold text-slate-700">Quantidade de Profissionais <span class="text-red-500">*</span></label>
+                            <input type="number" name="qtd_profissionais" required class="input-field" min="1">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-sm font-bold text-slate-700">Mão de Obra <span class="text-red-500">*</span></label>
+                            <div class="flex gap-4 mt-2">
+                                <label class="flex items-center gap-2"><input type="radio" name="mao_obra" value="Interna" required> Interna</label>
+                                <label class="flex items-center gap-2"><input type="radio" name="mao_obra" value="Externa"> Externa</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-2 space-y-1">
+                        <label class="text-sm font-bold text-slate-700">Local Específico do Trabalho em Altura</label>
+                        <input type="text" name="local" class="input-field">
+                    </div>
+
+                    <div class="md:col-span-2 space-y-1">
+                        <label class="text-sm font-bold text-slate-700">Descrição Detalhada da Tarefa a Ser Executada</label>
+                        <textarea name="descricao_tarefa" rows="2" class="input-field"></textarea>
+                    </div>
+
+                    <div class="space-y-1 md:col-span-2">
+                        <label class="text-sm font-bold text-slate-700">Altura Aproximada do Ponto de Trabalho (em metros)</label>
+                        <input type="number" step="0.1" name="altura" class="input-field md:w-1/2">
+                    </div>
+                </div>
+            </section>
+
+            <section class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200">
+                <h3 class="font-bold text-corp-dark border-b-2 border-slate-100 pb-2 mb-4 uppercase text-sm flex items-center gap-2">
+                    <i data-lucide="cloud-lightning"></i> 02. Condições Climáticas e Equipamentos
+                </h3>
+                
+                <div class="mb-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between mb-3 gap-2">
+                        <label class="block text-sm font-bold text-slate-700">Condições Climáticas Atuais <span class="text-red-500">*</span></label>
+                        <button type="button" id="btnWeather" onclick="fetchWeatherAPI()" class="bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold py-1 px-3 rounded-lg text-xs flex items-center gap-2 transition">
+                            <i data-lucide="cloud-sun" size="14"></i> Preencher via GPS (Auto)
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="w_ceu_limpo" name="clima" value="Céu Limpo/Sol"> Céu Limpo/Sol</label>
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="w_nublado" name="clima" value="Nublado"> Nublado</label>
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="w_chuva_leve" name="clima" value="Chuva Leve/Garoa"> Chuva Leve/Garoa</label>
+                        <label class="flex items-center gap-2 text-sm text-red-600 font-medium"><input type="checkbox" id="w_chuva_forte" name="clima" value="Chuva Forte"> Chuva Forte</label>
+                        <label class="flex items-center gap-2 text-sm text-red-600 font-medium"><input type="checkbox" id="w_vento_forte" name="clima" value="Vento Forte"> Vento Forte</label>
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="w_vento_leve" name="clima" value="Vento Leve"> Vento Leve</label>
+                        <label class="flex items-center gap-2 text-sm sm:col-span-2 md:col-span-3">
+                            <input type="checkbox" id="chk_clima_outro" value="Outro"> Outro: 
+                            <input type="text" id="txt_clima_outro" class="input-inline" placeholder="Detalhes de temperatura...">
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mb-6 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <label class="block text-sm font-bold text-slate-700 mb-3">Equipamentos de Proteção Individual (EPIs) Verificados <span class="text-red-500">*</span></label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epi" value="Cinto de Segurança tipo Paraquedista"> Cinto de Segurança tipo Paraquedista</label>
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epi" value="Talabarte Duplo ou Retrátil"> Talabarte Duplo ou Retrátil</label>
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epi" value="Trava Quedas"> Trava Quedas</label>
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epi" value="Capacete com Jugular"> Capacete com Jugular</label>
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epi" value="Luvas de Segurança"> Luvas de Segurança</label>
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epi" value="Óculos de Segurança"> Óculos de Segurança</label>
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epi" value="Botina de Segurança"> Botina de Segurança</label>
+                        <label class="flex items-center gap-2 text-sm md:col-span-2">
+                            <input type="checkbox" id="chk_epi_outro" value="Outro"> Outro: 
+                            <input type="text" id="txt_epi_outro" class="input-inline">
+                        </label>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <label class="block text-sm font-bold text-slate-700 mb-3">Equipamentos de Proteção Coletiva Utilizados (EPCs) <span class="text-red-500">*</span></label>
+                    <div class="grid grid-cols-1 gap-3">
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epc" value="Linha de Vida Fixa"> Linha de Vida Fixa (Sistema de Ancoragem Horizontal ou Vertical)</label>
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epc" value="Linha de Vida Provisória"> Linha de Vida Provisória (Sistema de Ancoragem Horizontal ou Vertical)</label>
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epc" value="Corda 12 mm"> Corda 12 mm</label>
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epc" value="Cinta de Ancoragem"> Cinta de Ancoragem</label>
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epc" value="Cones e fitas de sinalização"> Cones e fitas de sinalização</label>
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epc" value="Escada Certificada"> Escada Certificada (Deve possuir travas, sapatas antiderrapante e estar em perfeita condição de uso)</label>
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epc" value="Guarda Corpo"> Guarda Corpo</label>
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epc" value="Gaiola de Elevação Certificada"> Gaiola de Elevação Certificada</label>
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epc" value="Cesto Aéreo Munck"> Cesto Aéreo Munck</label>
+                        <label class="flex items-center gap-2 text-sm">
+                            <input type="checkbox" id="chk_epc_outro" value="Outro"> Outro: 
+                            <input type="text" id="txt_epc_outro" class="input-inline">
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+            <section class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200">
+                <h3 class="font-bold text-corp-dark border-b-2 border-slate-100 pb-2 mb-4 uppercase text-sm flex items-center gap-2">
+                    <i data-lucide="list-todo"></i> 03. Checklist de Segurança
+                </h3>
+                <div class="overflow-x-auto mb-6">
+                    <table class="w-full text-sm min-w-[600px]">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-700">
+                                <th class="text-left p-2 rounded-tl-lg">Item de Verificação</th>
+                                <th class="p-2 text-center text-corp-green">Sim</th>
+                                <th class="p-2 text-center text-red-600">Não</th>
+                                <th class="p-2 text-center rounded-tr-lg text-slate-500 w-24">Não se Aplica</th>
+                            </tr>
+                        </thead>
+                        <tbody id="checklistBody" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-sm font-bold text-slate-700">Existe Medidas de Controle Aplicadas para as Questões acima?</label>
+                    <textarea name="medidas_controle" rows="2" class="input-field"></textarea>
+                </div>
+            </section>
+
+            <section class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200">
+                <h3 class="font-bold text-corp-dark border-b-2 border-slate-100 pb-2 mb-4 uppercase text-sm flex items-center gap-2">
+                    <i data-lucide="users"></i> 04. Equipe e Observações
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="space-y-2">
+                        <label class="text-sm font-bold text-slate-700 block">Certificado de NR-35 Válido? <span class="text-red-500">*</span></label>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-1 text-sm"><input type="radio" name="cert_nr35" value="Sim" required> Sim</label>
+                            <label class="flex items-center gap-1 text-sm"><input type="radio" name="cert_nr35" value="Não"> Não</label>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-bold text-slate-700 block">ASO Apto e Válido? <span class="text-red-500">*</span></label>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-1 text-sm"><input type="radio" name="aso_valido" value="Sim" required> Sim</label>
+                            <label class="flex items-center gap-1 text-sm"><input type="radio" name="aso_valido" value="Não"> Não</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <div class="space-y-1">
+                        <label class="text-sm font-bold text-slate-700">Observações Adicionais / Requisitos Especiais</label>
+                        <textarea name="observacoes" rows="2" class="input-field"></textarea>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-sm font-bold text-slate-700">Profissionais Liberados para Executar o Serviço <span class="text-red-500">*</span></label>
+                        <textarea name="profissionais_liberados" required rows="2" class="input-field"></textarea>
+                    </div>
+                </div>
+            </section>
+
+            <section class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200">
+                <h3 class="font-bold text-corp-dark border-b-2 border-slate-100 pb-2 mb-4 uppercase text-sm flex items-center gap-2">
+                    <i data-lucide="pen-tool"></i> 05. Formalização e Assinaturas
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <label class="block text-sm font-bold text-slate-700 mb-1">Responsável pela Emissão (Nome) <span class="text-red-500">*</span></label>
+                        <input type="text" name="nome_emissor" required placeholder="Digite o nome..." class="input-field mb-2 text-sm py-1">
+                        <canvas id="sign1" class="signature-pad"></canvas>
+                        <button type="button" onclick="clearSign('sign1')" class="mt-2 text-xs text-red-500 font-bold hover:text-red-700">Limpar</button>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <label class="block text-sm font-bold text-slate-700 mb-1">Supervisor/Responsável Área (Nome) <span class="text-red-500">*</span></label>
+                        <input type="text" name="nome_supervisor" required placeholder="Digite o nome..." class="input-field mb-2 text-sm py-1">
+                        <canvas id="sign2" class="signature-pad"></canvas>
+                        <button type="button" onclick="clearSign('sign2')" class="mt-2 text-xs text-red-500 font-bold hover:text-red-700">Limpar</button>
+                    </div>
+                </div>
+            </section>
+
+            <div class="flex flex-col md:flex-row gap-3 pt-2">
+                <button type="submit" id="btnSubmit" class="flex-1 bg-corp-green hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-lg">
+                    <i data-lucide="table"></i> ENVIAR PLANILHA
+                </button>
+                
+                <button type="button" id="btnPDF" onclick="generatePDF('download')" class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-4 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-lg">
+                    <i data-lucide="file-down"></i> BAIXAR PDF
+                </button>
+
+                <button type="button" id="btnDrive" onclick="generatePDF('drive')" class="bg-corp-blue hover:bg-blue-800 text-white font-bold py-4 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-lg">
+                    <i data-lucide="cloud-upload"></i> SALVAR NO DRIVE
+                </button>
+            </div>
+        </form>
+    </main>
+
+    <script>
+        lucide.createIcons();
+        const pads = {};
+        
+        // ⚠️ URL DO GOOGLE APPS SCRIPT
+        const scriptURL = 'COLE_AQUI_A_URL_DO_SEU_WEB_APP';
+
+        const checklistItems = [
+            "Isolamento da Área de Projeção de Queda",
+            "Analisar o ambiente antes de Inicar o trabalho a fim de identificar outros riscos",
+            "O Sistema de ancoragem foi inspecionado?",
+            "Ancoragem da escada",
+            "Ferramentas em boas Condições de Conservação e Uso",
+            "Verificar a necessidade de uma segunda pessoa para segurar a escada",
+            "Informar Pessoal da Área e Arredores",
+            "Sinalização",
+            "Certificar-se de que o andaime não pode ser movimentado com pessoas encima",
+            "Andaime (Ancoragem, Diagonais, Rodas travadas)",
+            "Presença de Linhas Elétricas Energizadas",
+            "Acesso e Saída Seguros (Escadas/Plataformas)",
+            "Superfícies Instáveis ou Escorregadias",
+            "Queda de Objetos/Ferramentas"
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderChecklist();
+            initSignatures();
+        });
+
+        function renderChecklist() {
+            const body = document.getElementById('checklistBody');
+            checklistItems.forEach((item, index) => {
+                const row = `
+                    <tr class="hover:bg-slate-50 border-b border-slate-100">
+                        <td class="py-3 px-2 text-slate-800 font-medium leading-tight">${item}</td>
+                        <td class="text-center"><input type="radio" name="chk_${index}" value="Sim" checked></td>
+                        <td class="text-center"><input type="radio" name="chk_${index}" value="Não"></td>
+                        <td class="text-center"><input type="radio" name="chk_${index}" value="Não se Aplica"></td>
+                    </tr>
+                `;
+                body.innerHTML += row;
+            });
+        }
+
+        function initSignatures() {
+            const config = { penColor: "#0f172a", backgroundColor: "rgba(255,255,255,0)" };
+            for(let i=1; i<=2; i++) {
+                pads[`sign${i}`] = new SignaturePad(document.getElementById(`sign${i}`), config);
+            }
+            window.addEventListener('resize', resizeAllCanvas);
+            resizeAllCanvas();
+        }
+
+        function resizeAllCanvas() {
+            Object.keys(pads).forEach(key => {
+                const canvas = pads[key].canvas;
+                if(canvas.offsetWidth > 0) {
+                    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                    canvas.width = canvas.offsetWidth * ratio;
+                    canvas.height = canvas.offsetHeight * ratio;
+                    canvas.getContext("2d").scale(ratio, ratio);
+                    pads[key].clear();
+                }
+            });
+        }
+
+        function clearSign(id) { pads[id].clear(); }
+
+        // --- INTEGRAÇÃO API DO CLIMA (OPENWEATHERMAP) ---
+        async function fetchWeatherAPI() {
+            const btn = document.getElementById('btnWeather');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<i class="animate-spin" data-lucide="loader-2" size="14"></i> Buscando GPS...`;
+            lucide.createIcons();
+
+            if (!navigator.geolocation) {
+                alert("Seu navegador não suporta geolocalização.");
+                btn.innerHTML = originalHTML; return;
+            }
+
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                try {
+                    btn.innerHTML = `<i class="animate-spin" data-lucide="loader-2" size="14"></i> Conectando API...`;
+                    lucide.createIcons();
+
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    const apiKey = "657a68755eff696774778515ccb4ed06";
+                    
+                    const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=pt_br`);
+                    const data = await response.json();
+
+                    // Limpa checks
+                    document.querySelectorAll('input[name="clima"]').forEach(cb => cb.checked = false);
+
+                    // Análise de Vento (Forte > 8 m/s ou ~28km/h)
+                    if(data.wind.speed > 8) document.getElementById('w_vento_forte').checked = true;
+                    else document.getElementById('w_vento_leve').checked = true;
+
+                    // Análise de Clima (Céu/Chuva)
+                    const id = data.weather[0].id;
+                    if(id >= 200 && id < 600) {
+                        if(id === 500 || id === 501 || id === 520 || (id >= 300 && id < 400)) document.getElementById('w_chuva_leve').checked = true;
+                        else document.getElementById('w_chuva_forte').checked = true;
+                    } 
+                    else if (id === 800) document.getElementById('w_ceu_limpo').checked = true;
+                    else if (id > 800) document.getElementById('w_nublado').checked = true;
+
+                    // Temperatura no campo 'Outro'
+                    document.getElementById('chk_clima_outro').checked = true;
+                    document.getElementById('txt_clima_outro').value = `Temp: ${Math.round(data.main.temp)}°C, Umidade: ${data.main.humidity}%`;
+
+                    btn.innerHTML = `<i data-lucide="check" size="14" class="text-green-600"></i> Preenchido!`;
+                } catch (error) {
+                    alert("Erro ao buscar o clima. Verifique a internet.");
+                    btn.innerHTML = originalHTML;
+                } finally {
+                    lucide.createIcons();
+                    setTimeout(() => { btn.innerHTML = originalHTML; lucide.createIcons(); }, 3000);
+                }
+            }, () => {
+                alert("Permissão de GPS negada. Preencha manualmente.");
+                btn.innerHTML = originalHTML;
+                lucide.createIcons();
+            });
+        }
+
+        // --- GERAÇÃO DE PDF E ENVIO PARA O DRIVE ---
+        async function generatePDF(actionType) {
+            const btn = actionType === 'drive' ? document.getElementById('btnDrive') : document.getElementById('btnPDF');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<i class="animate-pulse" data-lucide="loader-2"></i> PROCESSANDO...`;
+            btn.disabled = true;
+            lucide.createIcons();
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'mm', 'a4');
+                document.querySelector('.pt-2.flex').style.display = 'none'; // Esconde botões do print
+                
+                const canvas = await html2canvas(document.body, { scale: 2 });
+                const imgData = canvas.toDataURL('image/jpeg', 0.8);
+                const pdfWidth = doc.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                
+                if(pdfHeight > doc.internal.pageSize.getHeight()) {
+                    let position = 0;
+                    while (position < pdfHeight) {
+                        doc.addImage(imgData, 'JPEG', 0, -position, pdfWidth, pdfHeight);
+                        position += doc.internal.pageSize.getHeight();
+                        if(position < pdfHeight) doc.addPage();
+                    }
+                } else {
+                    doc.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+                }
+                
+                const fileName = `PTA_Cysy_${new Date().getTime()}.pdf`;
+
+                if (actionType === 'download') {
+                    doc.save(fileName);
+                } else if (actionType === 'drive') {
+                    // Pega o PDF em Base64
+                    const pdfBase64 = doc.output('datauristring').split(',')[1];
+                    
+                    if(scriptURL === 'COLE_AQUI_A_URL_DO_SEU_WEB_APP') {
+                        alert("URL do Google Script não configurada! O arquivo não foi enviado ao Drive.");
+                        throw new Error("Sem URL do Script");
+                    }
+
+                    // Envia para o GAS salvar no Drive
+                    await fetch(scriptURL, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            action: 'uploadPDF',
+                            fileName: fileName,
+                            mimeType: 'application/pdf',
+                            fileData: pdfBase64
+                        }),
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                    });
+                    alert("PDF salvo com sucesso na sua pasta do Google Drive!");
+                }
+            } catch (error) {
+                console.error(error);
+                if(error.message !== "Sem URL do Script") alert("Ocorreu um erro na geração do arquivo.");
+            } finally {
+                document.querySelector('.pt-2.flex').style.display = 'flex'; 
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+                lucide.createIcons();
+            }
+        }
+
+        // --- SALVAR NA PLANILHA ---
+        function getCheckboxesWithOutro(name, chkOutroId, txtOutroId) {
+            let selected = Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(cb => cb.value);
+            const chkOutro = document.getElementById(chkOutroId);
+            const txtOutro = document.getElementById(txtOutroId);
+            if (chkOutro && chkOutro.checked && txtOutro.value.trim() !== '') selected.push(txtOutro.value.trim());
+            return selected.join(' + ');
+        }
+
+        document.getElementById('ptaForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (pads.sign1.isEmpty() || pads.sign2.isEmpty()) { alert("As assinaturas são obrigatórias!"); return; }
+
+            const btn = document.getElementById('btnSubmit');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<i class="animate-spin" data-lucide="loader-2"></i> SALVANDO...`;
+            btn.disabled = true;
+            lucide.createIcons();
+
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            
+            data.action = 'saveRow';
+            data.clima = getCheckboxesWithOutro('clima', 'chk_clima_outro', 'txt_clima_outro');
+            data.epi = getCheckboxesWithOutro('epi', 'chk_epi_outro', 'txt_epi_outro');
+            data.epc = getCheckboxesWithOutro('epc', 'chk_epc_outro', 'txt_epc_outro');
+            data.assinatura1 = pads.sign1.toDataURL();
+            data.assinatura2 = pads.sign2.toDataURL();
+            data.data_envio = new Date().toLocaleString('pt-BR');
+
+            try {
+                if(scriptURL !== 'COLE_AQUI_A_URL_DO_SEU_WEB_APP'){
+                    await fetch(scriptURL, { method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+                }
+                alert("Dados registrados na Planilha com Sucesso!");
+            } catch (error) {
+                alert("Erro ao enviar dados para a planilha.");
+            } finally {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+                lucide.createIcons();
+            }
+        });
+    </script>
+</body>
+</html>
