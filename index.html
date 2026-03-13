@@ -14,6 +14,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
         body { font-family: 'Roboto', sans-serif; background-color: #f8fafc; }
         
+        /* Paleta Corporativa */
         .bg-corp-dark { background-color: #0f172a; } 
         .text-corp-dark { color: #0f172a; }
         .bg-corp-green { background-color: #16a34a; } 
@@ -26,13 +27,16 @@
         .input-inline { border-bottom: 1px solid #cbd5e1; outline: none; background: transparent; padding: 0.2rem; font-size: 14px; flex-grow: 1; }
         .input-inline:focus { border-bottom: 2px solid #0f172a; }
         
-        .signature-pad { border: 2px dashed #94a3b8; border-radius: 0.5rem; background: white; touch-action: none; width: 100%; height: 180px; }
+        /* Modal de Assinatura */
+        .modal-overlay { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); }
+        .signature-canvas { border: 2px dashed #94a3b8; border-radius: 0.5rem; background: white; touch-action: none; width: 100%; height: 250px; }
+        
         input[type="checkbox"], input[type="radio"] { width: 1.25rem; height: 1.25rem; accent-color: #16a34a; cursor: pointer; flex-shrink: 0; }
     </style>
 </head>
-<body class="text-slate-800 pb-16">
+<body class="text-slate-800 pb-16 relative">
 
-    <header class="bg-corp-dark text-white p-4 shadow-md sticky top-0 z-50">
+    <header class="bg-corp-dark text-white p-4 shadow-md sticky top-0 z-40">
         <div class="container mx-auto max-w-4xl flex justify-between items-center">
             <div class="flex items-center gap-3">
                 <div class="bg-white p-2 rounded-lg">
@@ -64,7 +68,6 @@
                 <h3 class="font-bold text-corp-dark border-b-2 border-slate-100 pb-2 mb-4 uppercase text-sm flex items-center gap-2">
                     <i data-lucide="map-pin"></i> 01. Identificação da Atividade
                 </h3>
-                
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="space-y-1">
                         <label class="text-sm font-bold text-slate-700">Data e Hora da Emissão <span class="text-red-500">*</span></label>
@@ -80,10 +83,9 @@
                             <input type="time" name="hora_termino" required class="input-field w-2/5">
                         </div>
                     </div>
-                    
                     <div class="grid grid-cols-2 gap-4 md:col-span-2">
                         <div class="space-y-1">
-                            <label class="text-sm font-bold text-slate-700">Quantidade de Profissionais <span class="text-red-500">*</span></label>
+                            <label class="text-sm font-bold text-slate-700">Qtd. Profissionais <span class="text-red-500">*</span></label>
                             <input type="number" name="qtd_profissionais" required class="input-field" min="1">
                         </div>
                         <div class="space-y-1">
@@ -94,17 +96,14 @@
                             </div>
                         </div>
                     </div>
-
                     <div class="md:col-span-2 space-y-1">
                         <label class="text-sm font-bold text-slate-700">Local Específico do Trabalho em Altura</label>
                         <input type="text" name="local" class="input-field">
                     </div>
-
                     <div class="md:col-span-2 space-y-1">
                         <label class="text-sm font-bold text-slate-700">Descrição Detalhada da Tarefa a Ser Executada</label>
                         <textarea name="descricao_tarefa" rows="2" class="input-field"></textarea>
                     </div>
-
                     <div class="space-y-1 md:col-span-2">
                         <label class="text-sm font-bold text-slate-700">Altura Aproximada do Ponto de Trabalho (em metros)</label>
                         <input type="number" step="0.1" name="altura" class="input-field md:w-1/2">
@@ -120,12 +119,11 @@
                 <div class="mb-6">
                     <div class="flex flex-col md:flex-row md:items-center justify-between mb-3 gap-2">
                         <label class="block text-sm font-bold text-slate-700">Condições Climáticas Atuais <span class="text-red-500">*</span></label>
-                        <button type="button" id="btnWeather" onclick="fetchWeatherAPI()" class="bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold py-1 px-3 rounded-lg text-xs flex items-center gap-2 transition">
-                            <i data-lucide="cloud-sun" size="14"></i> Preencher via GPS (Auto)
+                        <button type="button" id="btnWeather" onclick="fetchWeatherAPI()" class="bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold py-2 px-4 rounded-lg text-xs flex items-center justify-center gap-2 transition">
+                            <i data-lucide="cloud-sun" size="16"></i> Preencher via GPS
                         </button>
                     </div>
-                    
-                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-lg border border-slate-200">
                         <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="w_ceu_limpo" name="clima" value="Céu Limpo/Sol"> Céu Limpo/Sol</label>
                         <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="w_nublado" name="clima" value="Nublado"> Nublado</label>
                         <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="w_chuva_leve" name="clima" value="Chuva Leve/Garoa"> Chuva Leve/Garoa</label>
@@ -134,7 +132,7 @@
                         <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="w_vento_leve" name="clima" value="Vento Leve"> Vento Leve</label>
                         <label class="flex items-center gap-2 text-sm sm:col-span-2 md:col-span-3">
                             <input type="checkbox" id="chk_clima_outro" value="Outro"> Outro: 
-                            <input type="text" id="txt_clima_outro" class="input-inline" placeholder="Detalhes de temperatura...">
+                            <input type="text" id="txt_clima_outro" class="input-inline" placeholder="Detalhes...">
                         </label>
                     </div>
                 </div>
@@ -159,12 +157,12 @@
                 <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
                     <label class="block text-sm font-bold text-slate-700 mb-3">Equipamentos de Proteção Coletiva Utilizados (EPCs) <span class="text-red-500">*</span></label>
                     <div class="grid grid-cols-1 gap-3">
-                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epc" value="Linha de Vida Fixa"> Linha de Vida Fixa (Sistema de Ancoragem Horizontal ou Vertical)</label>
-                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epc" value="Linha de Vida Provisória"> Linha de Vida Provisória (Sistema de Ancoragem Horizontal ou Vertical)</label>
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epc" value="Linha de Vida Fixa"> Linha de Vida Fixa</label>
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epc" value="Linha de Vida Provisória"> Linha de Vida Provisória</label>
                         <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epc" value="Corda 12 mm"> Corda 12 mm</label>
                         <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epc" value="Cinta de Ancoragem"> Cinta de Ancoragem</label>
                         <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epc" value="Cones e fitas de sinalização"> Cones e fitas de sinalização</label>
-                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epc" value="Escada Certificada"> Escada Certificada (Deve possuir travas, sapatas antiderrapante e estar em perfeita condição de uso)</label>
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epc" value="Escada Certificada"> Escada Certificada</label>
                         <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epc" value="Guarda Corpo"> Guarda Corpo</label>
                         <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epc" value="Gaiola de Elevação Certificada"> Gaiola de Elevação Certificada</label>
                         <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="epc" value="Cesto Aéreo Munck"> Cesto Aéreo Munck</label>
@@ -187,13 +185,12 @@
                                 <th class="text-left p-2 rounded-tl-lg">Item de Verificação</th>
                                 <th class="p-2 text-center text-corp-green">Sim</th>
                                 <th class="p-2 text-center text-red-600">Não</th>
-                                <th class="p-2 text-center rounded-tr-lg text-slate-500 w-24">Não se Aplica</th>
+                                <th class="p-2 text-center rounded-tr-lg text-slate-500 w-24">N/A</th>
                             </tr>
                         </thead>
                         <tbody id="checklistBody" class="divide-y divide-slate-100"></tbody>
                     </table>
                 </div>
-
                 <div class="space-y-1">
                     <label class="text-sm font-bold text-slate-700">Existe Medidas de Controle Aplicadas para as Questões acima?</label>
                     <textarea name="medidas_controle" rows="2" class="input-field"></textarea>
@@ -236,65 +233,137 @@
                 <h3 class="font-bold text-corp-dark border-b-2 border-slate-100 pb-2 mb-4 uppercase text-sm flex items-center gap-2">
                     <i data-lucide="pen-tool"></i> 05. Formalização e Assinaturas
                 </h3>
+                
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                        <label class="block text-sm font-bold text-slate-700 mb-1">Responsável pela Emissão (Nome) <span class="text-red-500">*</span></label>
-                        <input type="text" name="nome_emissor" required placeholder="Digite o nome..." class="input-field mb-2 text-sm py-1">
-                        <canvas id="sign1" class="signature-pad"></canvas>
-                        <button type="button" onclick="clearSign('sign1')" class="mt-2 text-xs text-red-500 font-bold hover:text-red-700">Limpar</button>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center">
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Resp. pela Emissão <span class="text-red-500">*</span></label>
+                        <input type="text" name="nome_emissor" required placeholder="Nome Completo..." class="input-field mb-3 text-sm py-2 text-center font-medium">
+                        
+                        <div class="flex flex-col items-center justify-center">
+                            <img id="img_sign1" class="hidden h-24 object-contain mb-3 bg-white rounded-lg border border-slate-300 w-full p-1" />
+                            <button type="button" onclick="openSignatureModal('sign1')" class="bg-corp-dark hover:bg-slate-800 text-white font-bold py-2 px-6 rounded-lg text-sm flex items-center gap-2 transition w-full justify-center shadow-sm">
+                                <i data-lucide="edit-3" size="16"></i> <span id="btn_txt_sign1">Clique para Assinar</span>
+                            </button>
+                        </div>
                     </div>
-                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                        <label class="block text-sm font-bold text-slate-700 mb-1">Supervisor/Responsável Área (Nome) <span class="text-red-500">*</span></label>
-                        <input type="text" name="nome_supervisor" required placeholder="Digite o nome..." class="input-field mb-2 text-sm py-1">
-                        <canvas id="sign2" class="signature-pad"></canvas>
-                        <button type="button" onclick="clearSign('sign2')" class="mt-2 text-xs text-red-500 font-bold hover:text-red-700">Limpar</button>
+                    
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center">
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Supervisor da Área <span class="text-red-500">*</span></label>
+                        <input type="text" name="nome_supervisor" required placeholder="Nome Completo..." class="input-field mb-3 text-sm py-2 text-center font-medium">
+                        
+                        <div class="flex flex-col items-center justify-center">
+                            <img id="img_sign2" class="hidden h-24 object-contain mb-3 bg-white rounded-lg border border-slate-300 w-full p-1" />
+                            <button type="button" onclick="openSignatureModal('sign2')" class="bg-corp-dark hover:bg-slate-800 text-white font-bold py-2 px-6 rounded-lg text-sm flex items-center gap-2 transition w-full justify-center shadow-sm">
+                                <i data-lucide="edit-3" size="16"></i> <span id="btn_txt_sign2">Clique para Assinar</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 text-center border-t border-dashed border-slate-300 pt-6">
+                    <button type="button" id="btnToggleSigns" onclick="toggleExtraSigns()" class="inline-flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 px-6 rounded-full text-sm transition w-full md:w-auto">
+                        <i data-lucide="plus-circle" size="18"></i> <span>Adicionar mais assinaturas</span>
+                    </button>
+                </div>
+
+                <div id="extraSigns" class="hidden grid-cols-1 md:grid-cols-2 gap-6 mt-6 transition-all">
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center">
+                        <input type="text" name="cargo_extra1" placeholder="Função (Ex: Gerente)" class="input-field mb-2 text-xs py-1 text-center font-bold text-slate-500 uppercase">
+                        <input type="text" name="nome_extra1" placeholder="Nome Completo..." class="input-field mb-3 text-sm py-2 text-center font-medium">
+                        <div class="flex flex-col items-center justify-center">
+                            <img id="img_sign3" class="hidden h-24 object-contain mb-3 bg-white rounded-lg border border-slate-300 w-full p-1" />
+                            <button type="button" onclick="openSignatureModal('sign3')" class="bg-slate-300 hover:bg-slate-400 text-slate-700 font-bold py-2 px-6 rounded-lg text-sm flex items-center gap-2 transition w-full justify-center">
+                                <i data-lucide="edit-3" size="16"></i> <span id="btn_txt_sign3">Assinar</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center">
+                        <input type="text" name="cargo_extra2" placeholder="Função (Ex: Técnico)" class="input-field mb-2 text-xs py-1 text-center font-bold text-slate-500 uppercase">
+                        <input type="text" name="nome_extra2" placeholder="Nome Completo..." class="input-field mb-3 text-sm py-2 text-center font-medium">
+                        <div class="flex flex-col items-center justify-center">
+                            <img id="img_sign4" class="hidden h-24 object-contain mb-3 bg-white rounded-lg border border-slate-300 w-full p-1" />
+                            <button type="button" onclick="openSignatureModal('sign4')" class="bg-slate-300 hover:bg-slate-400 text-slate-700 font-bold py-2 px-6 rounded-lg text-sm flex items-center gap-2 transition w-full justify-center">
+                                <i data-lucide="edit-3" size="16"></i> <span id="btn_txt_sign4">Assinar</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <div class="flex flex-col md:flex-row gap-3 pt-2">
+            <div class="flex flex-col md:flex-row gap-3 pt-4">
                 <button type="submit" id="btnSubmit" class="flex-1 bg-corp-green hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-lg">
                     <i data-lucide="table"></i> ENVIAR PLANILHA
                 </button>
-                
                 <button type="button" id="btnPDF" onclick="generatePDF('download')" class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-4 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-lg">
                     <i data-lucide="file-down"></i> BAIXAR PDF
                 </button>
-
                 <button type="button" id="btnDrive" onclick="generatePDF('drive')" class="bg-corp-blue hover:bg-blue-800 text-white font-bold py-4 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-lg">
-                    <i data-lucide="cloud-upload"></i> SALVAR NO DRIVE
+                    <i data-lucide="cloud-upload"></i> SALVAR DRIVE
                 </button>
             </div>
         </form>
     </main>
 
+    <div id="signatureModal" class="fixed inset-0 modal-overlay z-[100] hidden flex-col items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-lg p-5 flex flex-col shadow-2xl">
+            <h3 class="font-bold text-corp-dark text-lg mb-1 flex items-center gap-2">
+                <i data-lucide="pen-tool"></i> Tela de Assinatura
+            </h3>
+            <p class="text-xs text-slate-500 mb-4">Desenhe sua assinatura no quadro abaixo.</p>
+            
+            <div class="border-2 border-slate-200 rounded-xl overflow-hidden bg-slate-50 relative">
+                <canvas id="modalCanvas" class="signature-canvas w-full"></canvas>
+            </div>
+            
+            <div class="flex justify-between gap-3 mt-6">
+                <button type="button" onclick="closeSignatureModal()" class="flex-1 bg-slate-200 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-300">
+                    Cancelar
+                </button>
+                <button type="button" onclick="clearModalSignature()" class="flex-1 border-2 border-red-500 text-red-500 font-bold py-3 rounded-xl hover:bg-red-50">
+                    Apagar
+                </button>
+                <button type="button" onclick="saveSignature()" class="flex-[2] bg-corp-green text-white font-bold py-3 rounded-xl hover:bg-green-700 shadow-md">
+                    Confirmar Assinatura
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         lucide.createIcons();
-        const pads = {};
         
-        // ⚠️ URL DO GOOGLE APPS SCRIPT
+        // ⚠️ COLE A URL DO GOOGLE SCRIPT AQUI ⚠️
         const scriptURL = 'COLE_AQUI_A_URL_DO_SEU_WEB_APP';
 
+        // --- DADOS DO SISTEMA ---
         const checklistItems = [
             "Isolamento da Área de Projeção de Queda",
-            "Analisar o ambiente antes de Inicar o trabalho a fim de identificar outros riscos",
+            "Analisar o ambiente antes de Inicar o trabalho",
             "O Sistema de ancoragem foi inspecionado?",
             "Ancoragem da escada",
-            "Ferramentas em boas Condições de Conservação e Uso",
-            "Verificar a necessidade de uma segunda pessoa para segurar a escada",
+            "Ferramentas em boas Condições de Conservação",
+            "Verificar a necessidade de uma segunda pessoa",
             "Informar Pessoal da Área e Arredores",
             "Sinalização",
-            "Certificar-se de que o andaime não pode ser movimentado com pessoas encima",
+            "Andaime não pode ser movimentado com pessoas",
             "Andaime (Ancoragem, Diagonais, Rodas travadas)",
             "Presença de Linhas Elétricas Energizadas",
-            "Acesso e Saída Seguros (Escadas/Plataformas)",
+            "Acesso e Saída Seguros",
             "Superfícies Instáveis ou Escorregadias",
             "Queda de Objetos/Ferramentas"
         ];
 
+        // --- SISTEMA DE ASSINATURA COM MODAL (NOVO) ---
+        let signaturePadModal;
+        let currentTargetId = '';
+        const savedSignatures = { sign1: '', sign2: '', sign3: '', sign4: '' };
+
         document.addEventListener('DOMContentLoaded', () => {
             renderChecklist();
-            initSignatures();
+            
+            // Inicializa apenas UM canvas que fica dentro do modal oculto
+            const canvas = document.getElementById('modalCanvas');
+            signaturePadModal = new SignaturePad(canvas, { penColor: "#0f172a", backgroundColor: "rgba(255,255,255,0)" });
         });
 
         function renderChecklist() {
@@ -305,119 +374,136 @@
                         <td class="py-3 px-2 text-slate-800 font-medium leading-tight">${item}</td>
                         <td class="text-center"><input type="radio" name="chk_${index}" value="Sim" checked></td>
                         <td class="text-center"><input type="radio" name="chk_${index}" value="Não"></td>
-                        <td class="text-center"><input type="radio" name="chk_${index}" value="Não se Aplica"></td>
+                        <td class="text-center"><input type="radio" name="chk_${index}" value="N/A"></td>
                     </tr>
                 `;
                 body.innerHTML += row;
             });
         }
 
-        function initSignatures() {
-            const config = { penColor: "#0f172a", backgroundColor: "rgba(255,255,255,0)" };
-            for(let i=1; i<=2; i++) {
-                pads[`sign${i}`] = new SignaturePad(document.getElementById(`sign${i}`), config);
+        function openSignatureModal(targetId) {
+            currentTargetId = targetId;
+            const modal = document.getElementById('signatureModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Ajusta o tamanho do canvas para não borrar
+            const canvas = document.getElementById('modalCanvas');
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = canvas.offsetHeight * ratio;
+            canvas.getContext("2d").scale(ratio, ratio);
+            
+            signaturePadModal.clear();
+        }
+
+        function closeSignatureModal() {
+            const modal = document.getElementById('signatureModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function clearModalSignature() {
+            signaturePadModal.clear();
+        }
+
+        function saveSignature() {
+            if (signaturePadModal.isEmpty()) {
+                alert("Por favor, faça a assinatura antes de salvar.");
+                return;
             }
-            window.addEventListener('resize', resizeAllCanvas);
-            resizeAllCanvas();
+            
+            // Salva a imagem
+            const base64Data = signaturePadModal.toDataURL('image/png');
+            savedSignatures[currentTargetId] = base64Data;
+            
+            // Exibe a imagem no formulário principal
+            const imgElement = document.getElementById(`img_${currentTargetId}`);
+            imgElement.src = base64Data;
+            imgElement.classList.remove('hidden');
+            
+            // Muda o botão
+            document.getElementById(`btn_txt_${currentTargetId}`).innerText = "Refazer Assinatura";
+            
+            closeSignatureModal();
         }
 
-        function resizeAllCanvas() {
-            Object.keys(pads).forEach(key => {
-                const canvas = pads[key].canvas;
-                if(canvas.offsetWidth > 0) {
-                    const ratio = Math.max(window.devicePixelRatio || 1, 1);
-                    canvas.width = canvas.offsetWidth * ratio;
-                    canvas.height = canvas.offsetHeight * ratio;
-                    canvas.getContext("2d").scale(ratio, ratio);
-                    pads[key].clear();
-                }
-            });
+        function toggleExtraSigns() {
+            const div = document.getElementById('extraSigns');
+            const btn = document.getElementById('btnToggleSigns');
+            if (div.classList.contains('hidden')) {
+                div.classList.remove('hidden'); div.classList.add('grid');
+                btn.innerHTML = `<i data-lucide="minus-circle" size="18"></i> <span>Ocultar assinaturas extras</span>`;
+            } else {
+                div.classList.add('hidden'); div.classList.remove('grid');
+                btn.innerHTML = `<i data-lucide="plus-circle" size="18"></i> <span>Adicionar mais assinaturas</span>`;
+            }
+            lucide.createIcons();
         }
 
-        function clearSign(id) { pads[id].clear(); }
-
-        // --- INTEGRAÇÃO API DO CLIMA (OPENWEATHERMAP) ATUALIZADA ---
+        // --- GPS E CLIMA ---
         async function fetchWeatherAPI() {
             const btn = document.getElementById('btnWeather');
             const originalHTML = btn.innerHTML;
-            btn.innerHTML = `<i class="animate-spin" data-lucide="loader-2" size="14"></i> Buscando GPS...`;
+            btn.innerHTML = `<i class="animate-spin" data-lucide="loader-2" size="14"></i> Buscando Localização...`;
             lucide.createIcons();
 
             if (!navigator.geolocation) {
-                alert("Seu navegador ou dispositivo não suporta geolocalização.");
-                btn.innerHTML = originalHTML; 
-                return;
+                alert("Seu navegador não suporta geolocalização.");
+                btn.innerHTML = originalHTML; return;
+            }
+
+            // Exige https para GPS no celular
+            if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+                alert("Aviso: O recurso de GPS em celulares exige que o sistema esteja em um site seguro (HTTPS). Pode não funcionar no modo offline (file:///).");
             }
 
             navigator.geolocation.getCurrentPosition(async (position) => {
                 try {
-                    btn.innerHTML = `<i class="animate-spin" data-lucide="loader-2" size="14"></i> Conectando API...`;
+                    btn.innerHTML = `<i class="animate-spin" data-lucide="loader-2" size="14"></i> Conectando...`;
                     lucide.createIcons();
 
                     const lat = position.coords.latitude;
                     const lon = position.coords.longitude;
-                    const apiKey = "657a68755eff696774778515ccb4ed06"; // Sua chave
+                    const apiKey = "657a68755eff696774778515ccb4ed06";
                     
                     const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=pt_br`);
                     const data = await response.json();
 
-                    // Verifica se a API retornou algum erro (ex: Chave inativa ou bloqueada)
-                    if (!response.ok) {
-                        throw new Error(`Erro na API: ${data.message} (Código ${data.cod})`);
-                    }
+                    if (!response.ok) throw new Error(`Erro na API (${data.cod}): ${data.message}`);
 
-                    // Limpa os checks anteriores
                     document.querySelectorAll('input[name="clima"]').forEach(cb => cb.checked = false);
 
-                    // Análise de Vento (Forte > 8 m/s ou ~28km/h)
-                    if(data.wind && data.wind.speed > 8) {
-                        document.getElementById('w_vento_forte').checked = true;
-                    } else {
-                        document.getElementById('w_vento_leve').checked = true;
-                    }
+                    if(data.wind && data.wind.speed > 8) document.getElementById('w_vento_forte').checked = true;
+                    else document.getElementById('w_vento_leve').checked = true;
 
-                    // Análise de Clima (Céu/Chuva)
                     const id = data.weather[0].id;
                     if(id >= 200 && id < 600) {
-                        if(id === 500 || id === 501 || id === 520 || (id >= 300 && id < 400)) {
-                            document.getElementById('w_chuva_leve').checked = true;
-                        } else {
-                            document.getElementById('w_chuva_forte').checked = true;
-                        }
+                        if(id === 500 || id === 501 || id === 520 || (id >= 300 && id < 400)) document.getElementById('w_chuva_leve').checked = true;
+                        else document.getElementById('w_chuva_forte').checked = true;
                     } 
-                    else if (id === 800) {
-                        document.getElementById('w_ceu_limpo').checked = true;
-                    } 
-                    else if (id > 800) {
-                        document.getElementById('w_nublado').checked = true;
-                    }
+                    else if (id === 800) document.getElementById('w_ceu_limpo').checked = true;
+                    else if (id > 800) document.getElementById('w_nublado').checked = true;
 
-                    // Temperatura no campo 'Outro'
                     document.getElementById('chk_clima_outro').checked = true;
                     document.getElementById('txt_clima_outro').value = `Temp: ${Math.round(data.main.temp)}°C, Umidade: ${data.main.humidity}%`;
 
-                    btn.innerHTML = `<i data-lucide="check" size="14" class="text-green-600"></i> Preenchido!`;
+                    btn.innerHTML = `<i data-lucide="check" size="14" class="text-green-600"></i> Sucesso!`;
                 } catch (error) {
-                    // Agora ele vai mostrar exatamente o motivo da falha
-                    alert(error.message || "Erro ao buscar o clima. Verifique a internet.");
-                    console.error("Erro detalhado:", error);
+                    alert("Falha na API: " + error.message);
                     btn.innerHTML = originalHTML;
                 } finally {
                     lucide.createIcons();
-                    setTimeout(() => { btn.innerHTML = originalHTML; lucide.createIcons(); }, 4000);
+                    setTimeout(() => { btn.innerHTML = originalHTML; lucide.createIcons(); }, 3000);
                 }
             }, (geoError) => {
-                alert("Falha no GPS: " + geoError.message + " - Ative a localização do celular/navegador.");
+                alert("GPS Negado ou Falhou. Por favor, ative a localização do celular para o navegador.");
                 btn.innerHTML = originalHTML;
                 lucide.createIcons();
-            }, {
-                enableHighAccuracy: true,
-                timeout: 10000, // Aguarda até 10s pelo GPS
-                maximumAge: 0
-            });
+            }, { enableHighAccuracy: true, timeout: 10000 });
         }
 
-        // --- GERAÇÃO DE PDF E ENVIO PARA O DRIVE ---
+        // --- GERAÇÃO DE PDF ---
         async function generatePDF(actionType) {
             const btn = actionType === 'drive' ? document.getElementById('btnDrive') : document.getElementById('btnPDF');
             const originalHTML = btn.innerHTML;
@@ -426,9 +512,14 @@
             lucide.createIcons();
 
             try {
+                // Se as imagens não existirem, alerta o usuário antes de gerar
+                if(!savedSignatures.sign1 || !savedSignatures.sign2) {
+                    alert("Atenção: Você não preencheu as assinaturas obrigatórias.");
+                }
+
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF('p', 'mm', 'a4');
-                document.querySelector('.pt-2.flex').style.display = 'none'; // Esconde botões do print
+                document.querySelector('.pt-4.flex').style.display = 'none'; // Esconde botões do print
                 
                 const canvas = await html2canvas(document.body, { scale: 2 });
                 const imgData = canvas.toDataURL('image/jpeg', 0.8);
@@ -451,39 +542,28 @@
                 if (actionType === 'download') {
                     doc.save(fileName);
                 } else if (actionType === 'drive') {
-                    // Pega o PDF em Base64
                     const pdfBase64 = doc.output('datauristring').split(',')[1];
-                    
-                    if(scriptURL === 'COLE_AQUI_A_URL_DO_SEU_WEB_APP') {
-                        alert("URL do Google Script não configurada! O arquivo não foi enviado ao Drive.");
-                        throw new Error("Sem URL do Script");
-                    }
+                    if(scriptURL === 'COLE_AQUI_A_URL_DO_SEU_WEB_APP') throw new Error("Sem URL do Script");
 
-                    // Envia para o GAS salvar no Drive
                     await fetch(scriptURL, {
                         method: 'POST',
-                        body: JSON.stringify({
-                            action: 'uploadPDF',
-                            fileName: fileName,
-                            mimeType: 'application/pdf',
-                            fileData: pdfBase64
-                        }),
+                        body: JSON.stringify({ action: 'uploadPDF', fileName: fileName, mimeType: 'application/pdf', fileData: pdfBase64 }),
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' }
                     });
-                    alert("PDF salvo com sucesso na sua pasta do Google Drive!");
+                    alert("PDF salvo com sucesso no Google Drive!");
                 }
             } catch (error) {
-                console.error(error);
-                if(error.message !== "Sem URL do Script") alert("Ocorreu um erro na geração do arquivo.");
+                if(error.message === "Sem URL do Script") alert("Configure a URL do Google Script no HTML primeiro!");
+                else alert("Ocorreu um erro ao gerar o documento.");
             } finally {
-                document.querySelector('.pt-2.flex').style.display = 'flex'; 
+                document.querySelector('.pt-4.flex').style.display = 'flex'; 
                 btn.innerHTML = originalHTML;
                 btn.disabled = false;
                 lucide.createIcons();
             }
         }
 
-        // --- SALVAR NA PLANILHA ---
+        // --- SALVAR PLANILHA ---
         function getCheckboxesWithOutro(name, chkOutroId, txtOutroId) {
             let selected = Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(cb => cb.value);
             const chkOutro = document.getElementById(chkOutroId);
@@ -494,7 +574,11 @@
 
         document.getElementById('ptaForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (pads.sign1.isEmpty() || pads.sign2.isEmpty()) { alert("As assinaturas são obrigatórias!"); return; }
+            
+            if (!savedSignatures.sign1 || !savedSignatures.sign2) { 
+                alert("As assinaturas digitais do Emissor e Supervisor são obrigatórias!"); 
+                return; 
+            }
 
             const btn = document.getElementById('btnSubmit');
             const originalHTML = btn.innerHTML;
@@ -509,8 +593,10 @@
             data.clima = getCheckboxesWithOutro('clima', 'chk_clima_outro', 'txt_clima_outro');
             data.epi = getCheckboxesWithOutro('epi', 'chk_epi_outro', 'txt_epi_outro');
             data.epc = getCheckboxesWithOutro('epc', 'chk_epc_outro', 'txt_epc_outro');
-            data.assinatura1 = pads.sign1.toDataURL();
-            data.assinatura2 = pads.sign2.toDataURL();
+            
+            // Pega do novo sistema de variáveis Modal
+            data.assinatura1 = savedSignatures.sign1;
+            data.assinatura2 = savedSignatures.sign2;
             data.data_envio = new Date().toLocaleString('pt-BR');
 
             try {
