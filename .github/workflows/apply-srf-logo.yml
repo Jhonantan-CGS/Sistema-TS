@@ -3,7 +3,7 @@ name: Apply SRF logo
 on:
   push:
     paths:
-      - '.github/workflows/apply-srf-logo.yml'
+      - '.github/apply-srf-logo.trigger'
 
 permissions:
   contents: write
@@ -63,8 +63,9 @@ jobs:
       - name: Commit changes
         run: |
           rm .github/workflows/apply-srf-logo.yml
+          rm .github/apply-srf-logo.trigger
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html assets/srf-logo.svg .github/workflows/apply-srf-logo.yml
+          git add index.html assets/srf-logo.svg .github/workflows/apply-srf-logo.yml .github/apply-srf-logo.trigger
           git commit -m "Replace generated PDF logo with SRF and bump version to 1.6"
           git push
