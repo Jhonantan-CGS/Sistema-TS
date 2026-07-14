@@ -1,0 +1,70 @@
+name: Apply SRF logo
+
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-srf-logo.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update-document-logo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Update PDF logo and version
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+
+          old_css = ".pdf-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 15px; }\n        .pdf-header-texts h1 { font-size: 18px; margin: 0; font-weight: bold; color: #000 !important; }\n        .pdf-header-texts h2 { font-size: 12px; margin: 3px 0 0 0; color: #000 !important; }"
+          new_css = ".pdf-header { text-align: left; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 18px; }\n        .pdf-logo { height: 72px; width: auto; object-fit: contain; flex: 0 0 auto; }\n        .pdf-header-texts { text-align: left; }\n        .pdf-header-texts h2 { font-size: 14px; margin: 0; color: #000 !important; line-height: 1.35; }"
+          if old_css not in text:
+              raise SystemExit('Bloco CSS do cabeçalho PDF não encontrado.')
+          text = text.replace(old_css, new_css, 1)
+
+          old_header = '''        <div class="pdf-header">
+            <svg width="40" height="40" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 20 L50 5 L90 20 L90 50 C90 75 50 95 50 95 C50 95 10 75 10 50 Z" fill="#fff" stroke="#000" stroke-width="5"/><path d="M30 50 L45 65 L70 35" fill="none" stroke="#000" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div class="pdf-header-texts">
+                <h1>CYSY FERTILIZANTES</h1>
+                <h2>PERMISSÃO DE TRABALHO EM ALTURA (PTA) - NR-35 | V 1.5</h2>
+            </div>
+        </div>'''
+          new_header = '''        <div class="pdf-header">
+            <img src="assets/srf-logo.svg" alt="SRF Grupo Empresarial" class="pdf-logo">
+            <div class="pdf-header-texts">
+                <h2>PERMISSÃO DE TRABALHO EM ALTURA (PTA) - NR-35 | V 1.6</h2>
+            </div>
+        </div>'''
+          if old_header not in text:
+              raise SystemExit('Cabeçalho antigo do PDF não encontrado.')
+          text = text.replace(old_header, new_header, 1)
+
+          text = text.replace('V1.5', 'V1.6')
+          text = text.replace('V 1.5', 'V 1.6')
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Validate change
+        run: |
+          grep -q 'assets/srf-logo.svg' index.html
+          grep -q 'NR-35 | V 1.6' index.html
+          test -f assets/srf-logo.svg
+          ! grep -q '<h1>CYSY FERTILIZANTES</h1>' index.html
+
+      - name: Commit changes
+        run: |
+          rm .github/workflows/apply-srf-logo.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html assets/srf-logo.svg .github/workflows/apply-srf-logo.yml
+          git commit -m "Replace generated PDF logo with SRF and bump version to 1.6"
+          git push
