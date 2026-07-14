@@ -1,9 +1,9 @@
 name: Apply SRF logo
 
 on:
-  push:
-    paths:
-      - '.github/apply-srf-logo.trigger'
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -46,10 +46,7 @@ jobs:
           if old_header not in text:
               raise SystemExit('Cabeçalho antigo do PDF não encontrado.')
           text = text.replace(old_header, new_header, 1)
-
-          text = text.replace('V1.5', 'V1.6')
-          text = text.replace('V 1.5', 'V 1.6')
-
+          text = text.replace('V1.5', 'V1.6').replace('V 1.5', 'V 1.6')
           path.write_text(text, encoding='utf-8')
           PY
 
@@ -63,9 +60,9 @@ jobs:
       - name: Commit changes
         run: |
           rm .github/workflows/apply-srf-logo.yml
-          rm .github/apply-srf-logo.trigger
+          rm -f .github/apply-srf-logo.trigger
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html assets/srf-logo.svg .github/workflows/apply-srf-logo.yml .github/apply-srf-logo.trigger
+          git add -A
           git commit -m "Replace generated PDF logo with SRF and bump version to 1.6"
           git push
