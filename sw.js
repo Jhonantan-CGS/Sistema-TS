@@ -1,10 +1,10 @@
-const CACHE_NAME = 'pta-grupo-srf-v1.7';
+const CACHE_NAME = 'pta-grupo-srf-v1.7-contrast';
 const CORE_ASSETS = [
   './',
   './index.html',
-  './assets/styles-v1.6.css?v=1.7',
+  './assets/styles-v1.6.css?v=1.7-contrast',
   './assets/app-v1.6.js?v=1.7',
-  './assets/srf-logo.svg?v=1.7'
+  './assets/srf-logo.svg?v=1.7-contrast'
 ];
 
 self.addEventListener('install', event => {
