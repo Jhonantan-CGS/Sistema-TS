@@ -9,17 +9,19 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>PTA NR-35 | Grupo SRF | V1.6</title>
-  <link rel="icon" type="image/svg+xml" href="assets/srf-logo.svg">
-  <link rel="stylesheet" href="assets/styles-v1.6.css?v=1.6">
+  <title>PTA NR-35 | Grupo SRF | V1.8</title>
+  <link rel="icon" type="image/svg+xml" href="assets/srf-logo.svg?v=1.8">
+  <link rel="stylesheet" href="assets/styles-v1.8.css?v=1.8">
 </head>
 <body>
   <header class="app-header">
     <div class="header-inner">
-      <img class="brand-logo" src="assets/srf-logo.svg" alt="Logo Grupo SRF">
+      <div class="brand-logo-frame">
+        <img class="brand-logo" src="assets/srf-logo.svg?v=1.8" alt="Logo Grupo SRF">
+      </div>
       <div>
         <h1 class="brand-title">GRUPO SRF</h1>
-        <p class="brand-subtitle">SEGURANÇA 4.0 · PTA NR-35 · V 1.6</p>
+        <p class="brand-subtitle">SEGURANÇA 4.0 · PTA NR-35 · V 1.8</p>
       </div>
     </div>
   </header>
@@ -93,7 +95,7 @@
           <label class="option"><input type="checkbox" value="Vento Forte"> Vento Forte</label>
           <label class="option"><input type="checkbox" value="Vento Leve"> Vento Leve</label>
         </div>
-        <input class="input" style="margin-top:10px" type="text" id="f_clima_outro" placeholder="Condição complementar / resultado do GPS">
+        <input class="input top-gap" type="text" id="f_clima_outro" placeholder="Condição complementar / resultado do GPS">
       </section>
 
       <section class="card">
@@ -110,7 +112,7 @@
               <label class="option"><input type="checkbox" value="Óculos de Segurança"> Óculos</label>
               <label class="option"><input type="checkbox" value="Botina de Segurança"> Botina</label>
             </div>
-            <input class="input" style="margin-top:10px" id="f_epi_outro" placeholder="Outro EPI">
+            <input class="input top-gap" id="f_epi_outro" placeholder="Outro EPI">
           </div>
           <div>
             <label class="field-label">EPCs instalados <span class="required">*</span></label>
@@ -124,7 +126,7 @@
               <label class="option"><input type="checkbox" value="Guarda-corpo"> Guarda-corpo</label>
               <label class="option"><input type="checkbox" value="Andaime / Plataforma"> Andaime / Plataforma</label>
             </div>
-            <input class="input" style="margin-top:10px" id="f_epc_outro" placeholder="Outro EPC">
+            <input class="input top-gap" id="f_epc_outro" placeholder="Outro EPC">
           </div>
         </div>
       </section>
@@ -132,12 +134,13 @@
       <section class="card">
         <h2 class="section-title">6. Auditoria NR-35</h2>
         <div id="checklist" class="checklist"></div>
-        <div class="assist-box" style="margin-top:15px">
+        <div class="assist-box top-section-gap">
           <div class="assist-head">
-            <label class="field-label" style="margin:0">Riscos e medidas <span class="required">*</span></label>
-            <button class="btn btn-purple" type="button" id="btnRiskAssistant">Assistente NR-35</button>
+            <label class="field-label no-margin">Riscos e medidas <span class="required">*</span></label>
+            <button class="btn btn-purple" type="button" id="btnRiskAssistant">Gerar com IA protegida</button>
           </div>
-          <textarea id="f_riscos_medidas" required placeholder="O assistente técnico preencherá os riscos e as medidas"></textarea>
+          <textarea id="f_riscos_medidas" required placeholder="A IA preencherá os riscos e as medidas; se estiver indisponível, o sistema usará o assistente local"></textarea>
+          <p class="assist-note">A chave Groq permanece somente no Google Apps Script. Em falhas externas, o gerador local assume automaticamente.</p>
         </div>
       </section>
 
@@ -145,23 +148,25 @@
         <h2 class="section-title">7. Resgate e Liberação</h2>
         <div class="assist-box blue">
           <div class="assist-head">
-            <label class="field-label" style="margin:0">Plano de resgate rápido <span class="required">*</span></label>
-            <button class="btn btn-blue" type="button" id="btnRescueAssistant">Gerar plano técnico</button>
+            <label class="field-label no-margin">Plano de resgate rápido <span class="required">*</span></label>
+            <button class="btn btn-blue" type="button" id="btnRescueAssistant">Gerar com IA protegida</button>
           </div>
-          <textarea id="f_observacoes" required placeholder="O assistente técnico preencherá o plano de resgate"></textarea>
+          <textarea id="f_observacoes" required placeholder="A IA preencherá o plano; se estiver indisponível, o sistema usará o plano local"></textarea>
+          <p class="assist-note">O conteúdo gerado é apoio técnico e deve ser validado pelo responsável de SST antes da liberação.</p>
         </div>
-        <div class="sign-grid" style="margin-top:16px">
+
+        <div class="sign-grid top-section-gap">
           <div class="sign-card">
             <label class="field-label">Emissor</label>
             <input class="input" id="f_nome_emissor" required placeholder="Nome do responsável pela emissão">
             <img id="img_sign_emissor" class="signature-preview" alt="Assinatura do emissor">
-            <button class="btn" style="margin-top:10px;width:100%" type="button" data-sign="emissor">Assinar emissor</button>
+            <button class="btn full-width top-gap" type="button" data-sign="emissor">Assinar emissor</button>
           </div>
           <div class="sign-card">
             <label class="field-label">Supervisor</label>
             <input class="input" id="f_nome_sup" required placeholder="Nome do supervisor da área">
             <img id="img_sign_sup" class="signature-preview" alt="Assinatura do supervisor">
-            <button class="btn" style="margin-top:10px;width:100%" type="button" data-sign="sup">Assinar supervisor</button>
+            <button class="btn full-width top-gap" type="button" data-sign="sup">Assinar supervisor</button>
           </div>
         </div>
       </section>
@@ -174,7 +179,7 @@
       <footer class="footer">
         <div>Desenvolvido por <strong>Jhonantan Cardoso Gonçalves</strong></div>
         <div><a href="https://wa.me/5548992159791" target="_blank" rel="noopener">WhatsApp: (48) 99215-9791</a></div>
-        <div>V 1.6 © 2026 · Jaguaruna/SC</div>
+        <div>V 1.8 © 2026 · Jaguaruna/SC</div>
       </footer>
     </form>
   </main>
@@ -183,7 +188,7 @@
 
   <div id="signModal" class="modal" aria-hidden="true">
     <div class="modal-card">
-      <h2 style="margin-top:0">Assinatura digital</h2>
+      <h2 class="modal-title">Assinatura digital</h2>
       <canvas id="signatureCanvas" class="signature-canvas"></canvas>
       <div class="modal-actions">
         <button class="btn" type="button" id="btnCloseSign">Voltar</button>
@@ -195,10 +200,10 @@
 
   <div id="pdfTemplate" aria-hidden="true">
     <div class="pdf-header">
-      <img class="pdf-logo" src="assets/srf-logo.svg" alt="Logo Grupo SRF">
+      <img class="pdf-logo" src="assets/srf-logo.svg?v=1.8" alt="Logo Grupo SRF">
       <div class="pdf-brand">
         <h1>GRUPO SRF</h1>
-        <h2>PERMISSÃO DE TRABALHO EM ALTURA (PTA) - NR-35 | V 1.6</h2>
+        <h2>PERMISSÃO DE TRABALHO EM ALTURA (PTA) - NR-35 | V 1.8</h2>
       </div>
     </div>
 
@@ -237,14 +242,14 @@
 
     <table class="pdf-table">
       <tr><th>5. RISCOS E PLANO DE RESGATE</th></tr>
-      <tr><td><strong>Riscos e medidas:</strong><br><span id="p_riscos" style="white-space:pre-wrap"></span></td></tr>
-      <tr><td><strong>Plano de resgate/observações:</strong><br><span id="p_obs" style="white-space:pre-wrap"></span></td></tr>
+      <tr><td><strong>Riscos e medidas:</strong><br><span id="p_riscos" class="pre-wrap"></span></td></tr>
+      <tr><td><strong>Plano de resgate/observações:</strong><br><span id="p_obs" class="pre-wrap"></span></td></tr>
     </table>
 
     <div id="p_assinaturas" class="pdf-signatures"></div>
-    <div class="pdf-dev">Desenvolvido por Jhonantan Cardoso Gonçalves · WhatsApp (48) 99215-9791 · Versão 1.6</div>
+    <div class="pdf-dev">Desenvolvido por Jhonantan Cardoso Gonçalves · WhatsApp (48) 99215-9791 · Versão 1.8</div>
   </div>
 
-  <script src="assets/app-v1.6.js?v=1.6" defer></script>
+  <script src="assets/app-v1.8.js?v=1.8" defer></script>
 </body>
 </html>
