@@ -1,10 +1,10 @@
-const CACHE_NAME = 'pta-grupo-srf-v1.6';
+const CACHE_NAME = 'pta-grupo-srf-v1.7';
 const CORE_ASSETS = [
   './',
   './index.html',
-  './assets/styles-v1.6.css?v=1.6',
-  './assets/app-v1.6.js?v=1.6',
-  './assets/srf-logo.svg'
+  './assets/styles-v1.6.css?v=1.7',
+  './assets/app-v1.6.js?v=1.7',
+  './assets/srf-logo.svg?v=1.7'
 ];
 
 self.addEventListener('install', event => {
@@ -39,7 +39,7 @@ self.addEventListener('fetch', event => {
   }
 
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request, {cache: 'no-store'})
       .then(response => {
         if (response.ok && new URL(event.request.url).origin === self.location.origin) {
           const copy = response.clone();
