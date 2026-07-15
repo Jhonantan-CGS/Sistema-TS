@@ -1,16 +1,18 @@
-const CACHE_NAME = 'pta-grupo-srf-v1.7-contrast';
+const CACHE_NAME = 'pta-grupo-srf-v1.8';
 const CORE_ASSETS = [
   './',
   './index.html',
-  './assets/styles-v1.6.css?v=1.7-contrast',
-  './assets/app-v1.6.js?v=1.7',
-  './assets/srf-logo.svg?v=1.7-contrast'
+  './assets/styles-v1.8.css?v=1.8',
+  './assets/app-v1.8.js?v=1.8',
+  './assets/srf-logo.svg?v=1.8'
 ];
 
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(CORE_ASSETS)).catch(() => undefined)
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(CORE_ASSETS))
+      .catch(() => undefined)
   );
 });
 
