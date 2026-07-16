@@ -1,53 +1,63 @@
 # Backend Google Apps Script — PTA NR-35 V1.8
 
-Este diretório contém o único arquivo necessário para o backend da aplicação:
+Este diretório contém o backend seguro da aplicação:
 
 - `Code.gs`
 
 A chave Groq **não deve ser escrita no código, enviada ao GitHub ou adicionada ao JavaScript do navegador**.
 
-## Implantação obrigatória
+## Implantação automática
 
-1. Abra o projeto Google Apps Script vinculado à planilha da PTA.
-2. Substitua todo o conteúdo do arquivo atual pelo conteúdo de `Code.gs` deste diretório.
-3. Abra **Configurações do projeto**.
-4. Em **Propriedades do script**, adicione:
-   - Propriedade: `GROQ_API_KEY`
-   - Valor: a nova chave Groq.
-5. Opcionalmente, adicione:
-   - Propriedade: `GROQ_MODEL`
-   - Valor: o identificador do modelo liberado na sua conta Groq.
-6. Acesse **Implantar > Gerenciar implantações**.
-7. Edite a implantação atual pelo ícone de lápis.
-8. Em **Versão**, selecione **Nova versão**.
-9. Mantenha:
-   - Executar como: **Eu**.
-   - Quem pode acessar: **Qualquer pessoa**.
-10. Clique em **Implantar**.
+O repositório possui o workflow:
 
-Ao editar a implantação existente, a URL do Web App permanece a mesma e o frontend não precisa ser alterado.
+- `.github/workflows/deploy-apps-script.yml`
 
-## Validação
+Ele executa, nesta ordem:
 
-1. Reabra a planilha.
-2. No menu **GRUPO SRF Segurança 4.0**, clique em **Verificar configuração da IA**.
-3. Abra a aplicação V1.8.
-4. Preencha a descrição, o local e a altura.
-5. Clique em **Gerar com IA protegida**.
+1. valida os secrets `CLASPRC_JSON` e `CLASP_JSON`;
+2. autentica o `clasp` em ambiente isolado;
+3. baixa o projeto remoto atual;
+4. preserva o `appsscript.json` e demais configurações remotas;
+5. cria um backup antes de qualquer alteração;
+6. confirma que o ID da implantação pertence ao projeto autorizado;
+7. bloqueia código com chave Groq exposta;
+8. valida a sintaxe do `Code.gs`;
+9. substitui somente o `Code.gs` pelo código versionado;
+10. executa `clasp push --force`;
+11. atualiza a implantação existente sem mudar sua URL;
+12. testa o endpoint e confirma o serviço e a versão 1.8;
+13. salva backup, diff e relatório como artefato temporário do GitHub Actions.
 
-Quando a Groq estiver indisponível, sem chave ou limitada, o frontend utiliza automaticamente o assistente técnico local e a emissão da PTA continua funcionando.
+Por padrão, o workflow abre em modo **dry-run**, que apenas audita e não altera o Apps Script.
 
-## Segurança aplicada
+## Credenciais necessárias
 
-- Chave somente em `PropertiesService`.
-- Nenhuma chave no GitHub Pages.
-- Ações permitidas fixas.
-- Prompts montados no servidor.
-- Limites por cliente, por minuto e por dia.
-- Limite de tamanho de entrada e PDF.
-- Logs higienizados para remover padrões de chave.
-- Fallback local automático.
-- Gravação de PDF e planilha preservada.
+Em **Settings → Secrets and variables → Actions**, devem existir:
+
+- `CLASPRC_JSON`: conteúdo do arquivo `~/.clasprc.json` criado pelo `clasp login`;
+- `CLASP_JSON`: conteúdo do arquivo `.clasp.json` que contém o `scriptId` do projeto correto.
+
+Esses arquivos são bloqueados pelo `.gitignore` e nunca devem ser adicionados ao repositório.
+
+## Chave Groq
+
+No Google Apps Script, em **Configurações do projeto → Propriedades do script**, cadastre:
+
+- `GROQ_API_KEY`: nova chave Groq;
+- `GROQ_MODEL`: opcional; caso ausente, o backend utiliza `llama-3.3-70b-versatile`.
+
+## Execução
+
+1. Abra **Actions → Deploy Apps Script safely**.
+2. Clique em **Run workflow**.
+3. Primeiro execute com `dry_run: true`.
+4. Após a auditoria aprovada, execute com `dry_run: false`.
+
+O ID padrão corresponde à implantação já usada pelo frontend. O workflow confere se esse ID realmente pertence ao projeto autorizado antes de permitir qualquer escrita.
+
+## Contingência
+
+Enquanto a credencial ou a chave Groq não estiver configurada, o frontend continua utilizando automaticamente o assistente local e não bloqueia a emissão da PTA.
 
 ## Responsável
 
