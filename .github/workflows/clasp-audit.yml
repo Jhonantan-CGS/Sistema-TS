@@ -19,15 +19,23 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
-      - name: Validate clasp secrets
+      - name: Validate CLASPRC_JSON secret
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: test -n "$CLASPRC_JSON" || { echo "CLASPRC_JSON secret is missing"; exit 1; }
+
+      - name: Validate CLASP_JSON secret
+        env:
+          CLASP_JSON: ${{ secrets.CLASP_JSON }}
+        run: test -n "$CLASP_JSON" || { echo "CLASP_JSON secret is missing"; exit 1; }
+
+      - name: Prepare clasp credentials
         env:
           CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
           CLASP_JSON: ${{ secrets.CLASP_JSON }}
         run: |
-          test -n "$CLASPRC_JSON" || { echo "CLASPRC_JSON secret is missing"; exit 1; }
-          test -n "$CLASP_JSON" || { echo "CLASP_JSON secret is missing"; exit 1; }
           mkdir -p "$HOME" remote-apps-script
           printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
           printf '%s' "$CLASP_JSON" > remote-apps-script/.clasp.json
