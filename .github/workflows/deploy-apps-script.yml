@@ -136,7 +136,11 @@ jobs:
           cd "$APPS_SCRIPT_DIR"
           clasp show-file-status | tee "../$REPORT_DIR/file-status.txt"
           cd ..
-          diff -u "$BACKUP_DIR/Code.gs" "$APPS_SCRIPT_DIR/Code.gs" > "$REPORT_DIR/Code.diff" || true
+          if test -f "$BACKUP_DIR/Code.gs"; then
+            diff -u "$BACKUP_DIR/Code.gs" "$APPS_SCRIPT_DIR/Code.gs" > "$REPORT_DIR/Code.diff" || true
+          else
+            echo "Code.gs não existia no projeto remoto; será criado." > "$REPORT_DIR/Code.diff"
+          fi
 
       - name: Dry-run report
         if: ${{ inputs.dry_run }}
