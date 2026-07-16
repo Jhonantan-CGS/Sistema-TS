@@ -1,0 +1,205 @@
+name: Deploy Apps Script safely
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Auditar sem alterar o Apps Script"
+        required: true
+        default: true
+        type: boolean
+      deployment_id:
+        description: "ID da implantação existente que deve manter a mesma URL"
+        required: true
+        default: "AKfycbwP5apnJVBzo5WuTlggi4mtythC7j2aO-VoEi3RWxitqSnWgECuC3-0_aKlSpcFsFfX"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pta-apps-script-production
+  cancel-in-progress: false
+
+env:
+  APPS_SCRIPT_DIR: remote-apps-script
+  BACKUP_DIR: clasp-backup
+  REPORT_DIR: deployment-report
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Validate required credentials
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          CLASP_JSON: ${{ secrets.CLASP_JSON }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CLASPRC_JSON" || { echo "CLASPRC_JSON secret is missing"; exit 1; }
+          test -n "$CLASP_JSON" || { echo "CLASP_JSON secret is missing"; exit 1; }
+
+      - name: Prepare isolated clasp credentials
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          CLASP_JSON: ${{ secrets.CLASP_JSON }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$APPS_SCRIPT_DIR" "$BACKUP_DIR" "$REPORT_DIR"
+          node <<'NODE'
+          const fs = require('fs');
+          const os = require('os');
+          const path = require('path');
+
+          const authRaw = process.env.CLASPRC_JSON || '';
+          const projectRaw = process.env.CLASP_JSON || '';
+          const auth = JSON.parse(authRaw);
+          const project = JSON.parse(projectRaw);
+
+          if (!auth || typeof auth !== 'object') throw new Error('CLASPRC_JSON inválido.');
+          if (!project.scriptId || typeof project.scriptId !== 'string') {
+            throw new Error('CLASP_JSON não contém scriptId.');
+          }
+
+          fs.writeFileSync(path.join(os.homedir(), '.clasprc.json'), JSON.stringify(auth), {mode: 0o600});
+          fs.writeFileSync(
+            path.join(process.env.APPS_SCRIPT_DIR, '.clasp.json'),
+            JSON.stringify({scriptId: project.scriptId, rootDir: '.'}, null, 2),
+            {mode: 0o600}
+          );
+          NODE
+
+      - name: Install clasp
+        run: npm install --global @google/clasp
+
+      - name: Pull and back up current Apps Script
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$APPS_SCRIPT_DIR"
+          clasp show-authorized-user
+          clasp pull
+          clasp list-deployments | tee "../$REPORT_DIR/deployments-before.txt"
+          cd ..
+          cp -R "$APPS_SCRIPT_DIR"/. "$BACKUP_DIR"/
+          rm -f "$BACKUP_DIR/.clasp.json"
+
+      - name: Verify target deployment before any write
+        env:
+          DEPLOYMENT_ID: ${{ inputs.deployment_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOYMENT_ID" || { echo "Deployment ID vazio"; exit 1; }
+          grep -F "$DEPLOYMENT_ID" "$REPORT_DIR/deployments-before.txt" >/dev/null || {
+            echo "A implantação informada não pertence ao projeto autorizado. Nenhuma alteração foi feita."
+            exit 1
+          }
+
+      - name: Validate source code and exposed secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s apps-script/Code.gs || { echo "apps-script/Code.gs não encontrado"; exit 1; }
+          if grep -nE 'gsk_[A-Za-z0-9_-]{12,}' apps-script/Code.gs; then
+            echo "Chave Groq encontrada no código. Implantação bloqueada."
+            exit 1
+          fi
+          cp apps-script/Code.gs /tmp/Code.js
+          node --check /tmp/Code.js
+          grep -q "PropertiesService.getScriptProperties" apps-script/Code.gs
+          grep -q "GROQ_API_KEY" apps-script/Code.gs
+          grep -q "AI_NR35_RISKS" apps-script/Code.gs
+          grep -q "AI_NR35_RESCUE" apps-script/Code.gs
+
+      - name: Prepare candidate while preserving remote manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s "$APPS_SCRIPT_DIR/appsscript.json" || {
+            echo "Manifesto remoto appsscript.json ausente. Implantação bloqueada."
+            exit 1
+          }
+          cp apps-script/Code.gs "$APPS_SCRIPT_DIR/Code.gs"
+          cd "$APPS_SCRIPT_DIR"
+          clasp show-file-status | tee "../$REPORT_DIR/file-status.txt"
+          cd ..
+          diff -u "$BACKUP_DIR/Code.gs" "$APPS_SCRIPT_DIR/Code.gs" > "$REPORT_DIR/Code.diff" || true
+
+      - name: Dry-run report
+        if: ${{ inputs.dry_run }}
+        run: |
+          echo "Auditoria concluída. Nenhum clasp push ou redeploy foi executado." | tee "$REPORT_DIR/result.txt"
+
+      - name: Push validated source
+        if: ${{ !inputs.dry_run }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$APPS_SCRIPT_DIR"
+          clasp push --force | tee "../$REPORT_DIR/push.txt"
+
+      - name: Update existing deployment without changing URL
+        if: ${{ !inputs.dry_run }}
+        env:
+          DEPLOYMENT_ID: ${{ inputs.deployment_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$APPS_SCRIPT_DIR"
+          clasp create-deployment \
+            --deploymentId "$DEPLOYMENT_ID" \
+            --description "PTA NR-35 Grupo SRF v1.8 - ${GITHUB_SHA::12}" \
+            | tee "../$REPORT_DIR/deployment.txt"
+          clasp list-deployments | tee "../$REPORT_DIR/deployments-after.txt"
+
+      - name: Smoke-test deployed web app
+        if: ${{ !inputs.dry_run }}
+        env:
+          DEPLOYMENT_ID: ${{ inputs.deployment_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          sleep 8
+          URL="https://script.google.com/macros/s/${DEPLOYMENT_ID}/exec?health=$(date +%s)"
+          curl --fail --silent --show-error --location \
+            --retry 5 --retry-delay 5 --retry-all-errors \
+            "$URL" > "$REPORT_DIR/health.json"
+          node <<'NODE'
+          const fs = require('fs');
+          const result = JSON.parse(fs.readFileSync('deployment-report/health.json', 'utf8'));
+          if (result.status !== 'success') throw new Error('Endpoint não retornou status success.');
+          if (String(result.version) !== '1.8') throw new Error(`Versão remota inesperada: ${result.version}`);
+          if (result.service !== 'PTA NR-35 GRUPO SRF') throw new Error('Serviço remoto inesperado.');
+          console.log(`Smoke test OK: ${result.service} v${result.version}; IA configurada: ${Boolean(result.aiConfigured)}`);
+          NODE
+          echo "Implantação e teste concluídos com sucesso." | tee "$REPORT_DIR/result.txt"
+
+      - name: Remove credential files
+        if: always()
+        shell: bash
+        run: |
+          rm -f "$HOME/.clasprc.json" "$APPS_SCRIPT_DIR/.clasp.json"
+
+      - name: Upload backup and deployment report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apps-script-deployment-${{ github.run_id }}
+          path: |
+            clasp-backup/
+            deployment-report/
+          include-hidden-files: false
+          retention-days: 7
