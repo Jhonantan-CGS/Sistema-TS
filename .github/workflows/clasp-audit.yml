@@ -1,0 +1,61 @@
+name: Clasp read-only audit
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate clasp secrets
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          CLASP_JSON: ${{ secrets.CLASP_JSON }}
+        run: |
+          test -n "$CLASPRC_JSON" || { echo "CLASPRC_JSON secret is missing"; exit 1; }
+          test -n "$CLASP_JSON" || { echo "CLASP_JSON secret is missing"; exit 1; }
+          mkdir -p "$HOME" remote-apps-script
+          printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
+          printf '%s' "$CLASP_JSON" > remote-apps-script/.clasp.json
+          chmod 600 "$HOME/.clasprc.json" remote-apps-script/.clasp.json
+
+      - name: Install clasp
+        run: npm install --global @google/clasp
+
+      - name: Pull remote Apps Script
+        working-directory: remote-apps-script
+        run: |
+          clasp show-authorized-user
+          clasp pull
+          clasp status
+          rm -f .clasp.json
+
+      - name: Verify no secret-like content was pulled
+        working-directory: remote-apps-script
+        run: |
+          if grep -RInE 'gsk_[A-Za-z0-9_-]{12,}|GROQ_API_KEY\s*[=:]\s*["'"'][^"'"']+' .; then
+            echo "Potential secret-like content found in pulled source. Artifact upload blocked."
+            exit 1
+          fi
+
+      - name: Upload sanitized Apps Script snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: apps-script-remote-snapshot
+          path: remote-apps-script/
+          include-hidden-files: false
+          retention-days: 1
