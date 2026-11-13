@@ -1,528 +1,639 @@
-/**
- * PTA NR-35 — GRUPO SRF
- * Backend seguro da aplicação web.
- * Versão 1.8
- *
- * Desenvolvido por Jhonantan Cardoso Gonçalves
- * WhatsApp: https://wa.me/5548992159791
- */
+/* ============================================
+   GRUPO SRF - PTA NR-35 v1.9
+   Backend Google Apps Script
+   
+   SEGURANÇA:
+   - Chave Groq em ScriptProperties
+   - Nunca retorna a chave
+   - Prompts montados no servidor
+   - Validação de appId e ação
+   - Rate limiting
+   - Logs sanitizados
+   ============================================ */
 
-var PTA_CONFIG = Object.freeze({
-  VERSION: '1.8',
-  APP_ID: 'PTA_GRUPO_SRF',
-  SHEET_NAME: 'DADOS',
-  FOLDER_NAME: 'PTA_NR35_Arquivos',
-  GROQ_URL: 'https://api.groq.com/openai/v1/chat/completions',
-  DEFAULT_GROQ_MODEL: 'llama-3.3-70b-versatile',
-  MAX_TEXT_LENGTH: 2500,
-  MAX_PDF_DATA_LENGTH: 20000000,
-  AI_CLIENT_MINUTE_LIMIT: 5,
-  AI_GLOBAL_MINUTE_LIMIT: 25,
-  AI_GLOBAL_DAILY_LIMIT: 300
-});
+const APP_VERSION = '1.9';
+const APP_NAME = 'PTA NR-35 GRUPO SRF';
+const ALLOWED_ACTIONS = ['SAVE_PDF', 'AI_NR35_RISKS', 'AI_NR35_RESCUE', 'FORMALIZATION_SAVE', 'FORMALIZATION_LIST', 'FORMALIZATION_GET', 'SEND_FORMALIZATION_EMAIL'];
+const MAX_FIELD_LENGTH = 5000;
+const MAX_RATE_CLIENT = 30;
+const MAX_RATE_GLOBAL = 200;
+const MAX_DAILY_CALLS = 5000;
 
-var PTA_HEADERS = [
-  'Data e Hora de Emissão',
-  'Data e Hora do Término',
-  'Mão de Obra',
-  'Qtd. de Profissionais',
-  'Equipe (Nomes / NR-35 / ASO)',
-  'Local Específico',
-  'Altura Aproximada (m)',
-  'Descrição Detalhada da Tarefa',
-  'Condições Climáticas',
-  'EPIs Verificados',
-  'EPCs Utilizados',
-  'Riscos e Medidas de Controle',
-  'Plano de Resgate / Observações',
-  'Técnico SST (Emissor)',
-  'Supervisor da Área',
-  'Link do Arquivo PDF'
-];
+/* ============================================
+   doGet - Informações seguras
+   ============================================ */
 
-function onOpen() {
-  SpreadsheetApp.getUi()
-    .createMenu('GRUPO SRF Segurança 4.0')
-    .addItem('Inserir/Corrigir Cabeçalhos', 'formatarCabecalhos')
-    .addItem('Verificar configuração da IA', 'verificarConfiguracaoIA')
-    .addToUi();
+function doGet(e) {
+    const props = PropertiesService.getScriptProperties();
+    const aiKey = props.getProperty('GROQ_API_KEY');
+    return ContentService.createTextOutput(JSON.stringify({
+        status: 'success',
+        service: APP_NAME,
+        version: APP_VERSION,
+        aiConfigured: !!(aiKey && aiKey.length > 10)
+    })).setMimeType(ContentService.MimeType.JSON);
 }
 
-function formatarCabecalhos() {
-  var ui = SpreadsheetApp.getUi();
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(PTA_CONFIG.SHEET_NAME);
-
-  if (!sheet) {
-    ui.alert(
-      'Erro',
-      "A aba 'DADOS' não foi encontrada. Faça pelo menos um envio pelo aplicativo primeiro.",
-      ui.ButtonSet.OK
-    );
-    return;
-  }
-
-  aplicarCabecalhos_(sheet);
-  ui.alert(
-    'Sucesso!',
-    'Os cabeçalhos foram aplicados sem apagar os registros existentes.',
-    ui.ButtonSet.OK
-  );
-}
-
-function verificarConfiguracaoIA() {
-  var ui = SpreadsheetApp.getUi();
-  var properties = PropertiesService.getScriptProperties();
-  var apiKey = properties.getProperty('GROQ_API_KEY');
-  var model = properties.getProperty('GROQ_MODEL') || PTA_CONFIG.DEFAULT_GROQ_MODEL;
-
-  if (!apiKey) {
-    ui.alert(
-      'IA não configurada',
-      "Cadastre a propriedade de script GROQ_API_KEY. O aplicativo continuará funcionando com o assistente local enquanto a chave não estiver configurada.",
-      ui.ButtonSet.OK
-    );
-    return;
-  }
-
-  ui.alert(
-    'IA configurada',
-    'A chave Groq está armazenada nas Propriedades do script. Modelo configurado: ' + model + '.',
-    ui.ButtonSet.OK
-  );
-}
-
-function doGet() {
-  var properties = PropertiesService.getScriptProperties();
-  return respostaJson_({
-    status: 'success',
-    service: 'PTA NR-35 GRUPO SRF',
-    version: PTA_CONFIG.VERSION,
-    aiConfigured: Boolean(properties.getProperty('GROQ_API_KEY'))
-  });
-}
+/* ============================================
+   doPost - Roteador principal
+   ============================================ */
 
 function doPost(e) {
-  try {
-    var data = lerJsonRequisicao_(e);
-    validarAplicacao_(data);
+    try {
+        const body = JSON.parse(e.postData.contents || '{}');
+        const action = body.action;
+        const appId = body.appId || 'web';
 
-    var action = String(data.action || 'SAVE_PDF').trim().toUpperCase();
-    var result;
+        if (!action || !ALLOWED_ACTIONS.includes(action)) {
+            return jsonResponse({ status: 'error', message: 'Ação inválida.' }, 400);
+        }
 
-    switch (action) {
-      case 'SAVE_PDF':
-        result = salvarPdfERegistro_(data);
-        break;
-      case 'AI_NR35_RISKS':
-        result = processarIaNr35_('RISKS', data);
-        break;
-      case 'AI_NR35_RESCUE':
-        result = processarIaNr35_('RESCUE', data);
-        break;
-      default:
-        throw criarErro_('ACTION_NOT_ALLOWED', 'Ação não permitida.');
+        checkRateLimits(appId);
+
+        switch (action) {
+            case 'SAVE_PDF':
+                return handleSavePdf(body);
+            case 'AI_NR35_RISKS':
+                return handleAiRisks(body);
+            case 'AI_NR35_RESCUE':
+                return handleAiRescue(body);
+            case 'FORMALIZATION_SAVE':
+                return handleFormalizationSave(body);
+            case 'FORMALIZATION_LIST':
+                return handleFormalizationList(body);
+            case 'FORMALIZATION_GET':
+                return handleFormalizationGet(body);
+            case 'SEND_FORMALIZATION_EMAIL':
+                return handleSendFormalizationEmail(body);
+            default:
+                return jsonResponse({ status: 'error', message: 'Ação não implementada.' }, 400);
+        }
+    } catch (err) {
+        Logger.log('Erro doPost: ' + sanitizeLog(err.message));
+        return jsonResponse({ status: 'error', message: 'Erro interno do servidor.' }, 500);
+    }
+}
+
+/* ============================================
+   Rate Limiting
+   ============================================ */
+
+function checkRateLimits(appId) {
+    const props = PropertiesService.getScriptProperties();
+    const now = new Date();
+    const todayKey = 'rate_' + Utilities.formatDate(now, 'America/Sao_Paulo', 'yyyyMMdd');
+    const clientKey = 'client_' + appId + '_' + Math.floor(now.getTime() / 60000);
+    const globalKey = 'global_' + Math.floor(now.getTime() / 60000);
+
+    const clientCount = parseInt(props.getProperty(clientKey) || '0');
+    if (clientCount >= MAX_RATE_CLIENT) {
+        throw new Error('Rate limit do cliente excedido.');
+    }
+    props.setProperty(clientKey, String(clientCount + 1));
+    props.setProperty(clientKey + '_exp', String(Math.floor(now.getTime() / 60000) + 2));
+
+    const globalCount = parseInt(props.getProperty(globalKey) || '0');
+    if (globalCount >= MAX_RATE_GLOBAL) {
+        throw new Error('Rate limit global excedido.');
+    }
+    props.setProperty(globalKey, String(globalCount + 1));
+
+    const dailyCount = parseInt(props.getProperty(todayKey) || '0');
+    if (dailyCount >= MAX_DAILY_CALLS) {
+        throw new Error('Limite diário excedido.');
+    }
+    props.setProperty(todayKey, String(dailyCount + 1));
+
+    cleanupRateLimits_(props);
+}
+
+function cleanupRateLimits_(props) {
+    const now = new Date();
+    const currentMinute = Math.floor(now.getTime() / 60000);
+    const allProps = props.getProperties();
+    for (const key in allProps) {
+        if (key.startsWith('client_') || key.startsWith('global_')) {
+            const parts = key.split('_');
+            const ts = parseInt(parts[parts.length - 1]);
+            if (!isNaN(ts) && ts < currentMinute - 5) {
+                props.deleteProperty(key);
+            }
+        }
+    }
+}
+
+/* ============================================
+   SAVE_PDF - Salvar PDF no Drive e registrar
+   ============================================ */
+
+function handleSavePdf(body) {
+    const lock = LockService.getScriptLock();
+    try {
+        lock.waitLock(30000);
+    } catch (e) {
+        return jsonResponse({ status: 'error', message: 'Sistema ocupado. Tente novamente.' }, 503);
     }
 
-    result.status = 'success';
-    result.version = PTA_CONFIG.VERSION;
-    return respostaJson_(result);
-  } catch (error) {
-    console.error('[PTA_BACKEND] ' + sanitizarLog_(error));
-    return respostaJson_({
-      status: 'error',
-      code: error && error.code ? error.code : 'INTERNAL_ERROR',
-      message: mensagemSegura_(error)
-    });
-  }
+    try {
+        const required = ['fileName', 'pdfBase64', 'local', 'emissor', 'supervisor'];
+        for (const field of required) {
+            if (!body[field]) {
+                return jsonResponse({ status: 'error', message: 'Campo obrigatório ausente: ' + field }, 400);
+            }
+        }
+
+        const folder = getOrCreateFolder_('GRUPO SRF - PTA NR-35');
+        const pdfData = body.pdfBase64.split(',')[1] || body.pdfBase64;
+        const blob = Utilities.newBlob(
+            Utilities.base64Decode(pdfData),
+            'application/pdf',
+            sanitizeFileName(body.fileName)
+        );
+        const file = folder.createFile(blob);
+        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        const fileUrl = file.getUrl();
+
+        const ss = SpreadsheetApp.getActiveSpreadsheet();
+        const sheet = ss.getSheetByName('Dados PTA') || ss.insertSheet('Dados PTA');
+
+        const lock2 = LockService.getScriptLock();
+        try {
+            lock2.waitLock(10000);
+            const row = [
+                new Date(),
+                body.emissao || '',
+                body.termino || '',
+                body.maoObra || '',
+                body.qtdTrabalhadores || 0,
+                body.nomesEquipe || '',
+                body.local || '',
+                body.altura || '',
+                body.tarefa || '',
+                body.clima || '',
+                body.epis || '',
+                body.epcs || '',
+                body.riscos || '',
+                body.resgate || '',
+                body.emissor || '',
+                body.supervisor || '',
+                body.checklist || '',
+                body.fileName || '',
+                fileUrl,
+                APP_VERSION
+            ];
+            sheet.appendRow(row);
+        } finally {
+            lock2.releaseLock();
+        }
+
+        return jsonResponse({
+            status: 'success',
+            message: 'PDF salvo e registrado com sucesso.',
+            fileUrl: fileUrl,
+            fileName: body.fileName
+        });
+
+    } catch (err) {
+        Logger.log('Erro SAVE_PDF: ' + sanitizeLog(err.message));
+        return jsonResponse({ status: 'error', message: 'Erro ao salvar PDF: ' + sanitizeLog(err.message) }, 500);
+    } finally {
+        lock.releaseLock();
+    }
 }
 
-function doOptions() {
-  return ContentService.createTextOutput('OK');
+/* ============================================
+   AI_NR35_RISKS - Gerar riscos via Groq
+   ============================================ */
+
+function handleAiRisks(body) {
+    const description = sanitizeField(body.description);
+    if (!description) {
+        return jsonResponse({ status: 'error', message: 'Descrição da tarefa obrigatória.' }, 400);
+    }
+
+    const prompt = 'Você é um especialista em segurança do trabalho NR-35 (Trabalho em Altura). ' +
+        'Analise a seguinte tarefa e gere uma lista de 3 riscos e 3 medidas de prevenção. ' +
+        'Responda APENAS com o texto limpo, sem asteriscos, sem markdown, em formato:\n' +
+        'RISCOS:\n1. ...\n2. ...\n3. ...\n\nMEDIDAS:\n1. ...\n2. ...\n3. ...\n\n' +
+        'Tarefa: ' + description;
+
+    return callGroqApi(prompt);
 }
 
-function salvarPdfERegistro_(data) {
-  validarTextoObrigatorio_(data.fileName, 'Nome do arquivo', 180);
-  validarTextoObrigatorio_(data.pdfBase64, 'Conteúdo do PDF', PTA_CONFIG.MAX_PDF_DATA_LENGTH);
+/* ============================================
+   AI_NR35_RESCUE - Gerar plano de resgate
+   ============================================ */
 
-  var pdfData = String(data.pdfBase64);
-  if (pdfData.indexOf('data:application/pdf') !== 0 || pdfData.indexOf(',') < 0) {
-    throw criarErro_('INVALID_PDF', 'O arquivo PDF recebido é inválido.');
-  }
+function handleAiRescue(body) {
+    const description = sanitizeField(body.description);
+    if (!description) {
+        return jsonResponse({ status: 'error', message: 'Descrição da tarefa obrigatória.' }, 400);
+    }
 
-  if (pdfData.length > PTA_CONFIG.MAX_PDF_DATA_LENGTH) {
-    throw criarErro_('PDF_TOO_LARGE', 'O PDF excede o limite permitido.');
-  }
+    const prompt = 'Você é um especialista em resgate em altura e NR-35. ' +
+        'Crie um plano de resgate rápido e prático para a seguinte tarefa. ' +
+        'Responda APENAS com o texto limpo, sem asteriscos, sem markdown, em tópicos diretos. ' +
+        'Inclua: 1) Acionamento inicial, 2) Avaliação do local, 3) Procedimento de resgate, 4) Primeiros socorros, 5) Comunicação.\n\n' +
+        'Tarefa: ' + description;
 
-  var safeFileName = sanitizarNomeArquivo_(data.fileName);
-  var base64Data = pdfData.substring(pdfData.indexOf(',') + 1);
-  var decoded;
+    return callGroqApi(prompt);
+}
 
-  try {
-    decoded = Utilities.base64Decode(base64Data);
-  } catch (error) {
-    throw criarErro_('INVALID_PDF_BASE64', 'Não foi possível interpretar o PDF recebido.');
-  }
+/* ============================================
+   Groq API Integration (Backend only)
+   ============================================ */
 
-  var folder = obterPasta_(PTA_CONFIG.FOLDER_NAME);
-  var blob = Utilities.newBlob(decoded, MimeType.PDF, safeFileName);
-  var file = folder.createFile(blob);
-  var fileUrl = file.getUrl();
+function callGroqApi(prompt) {
+    const props = PropertiesService.getScriptProperties();
+    const apiKey = props.getProperty('GROQ_API_KEY');
+    const model = props.getProperty('GROQ_MODEL') || 'llama-3.3-70b-versatile';
 
-  var lock = LockService.getScriptLock();
-  lock.waitLock(15000);
-  try {
-    var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = spreadsheet.getSheetByName(PTA_CONFIG.SHEET_NAME);
+    if (!apiKey || apiKey.length < 10) {
+        Logger.log('GROQ_API_KEY não configurada. Retornando fallback.');
+        return jsonResponse({
+            status: 'fallback',
+            message: 'IA não configurada. Use o preenchimento manual.',
+            content: ''
+        });
+    }
+
+    try {
+        const payload = JSON.stringify({
+            model: model,
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.2,
+            max_tokens: 1024
+        });
+
+        const response = UrlFetchApp.fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'post',
+            contentType: 'application/json',
+            headers: {
+                'Authorization': 'Bearer ' + apiKey
+            },
+            payload: payload,
+            muteHttpExceptions: true,
+            timeout: 25000
+        });
+
+        const code = response.getResponseCode();
+        const data = JSON.parse(response.getContentText());
+
+        if (code === 401 || code === 403) {
+            Logger.log('Groq auth error: ' + code);
+            return jsonResponse({
+                status: 'fallback',
+                message: 'Autenticação da IA falhou.',
+                content: ''
+            });
+        }
+
+        if (code === 429) {
+            Logger.log('Groq rate limit atingido');
+            return jsonResponse({
+                status: 'fallback',
+                message: 'IA temporariamente indisponível (limite de uso).',
+                content: ''
+            });
+        }
+
+        if (code !== 200) {
+            Logger.log('Groq error: ' + code);
+            return jsonResponse({
+                status: 'fallback',
+                message: 'Erro na IA.',
+                content: ''
+            });
+        }
+
+        const content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+        if (!content) {
+            return jsonResponse({
+                status: 'fallback',
+                message: 'Resposta vazia da IA.',
+                content: ''
+            });
+        }
+
+        return jsonResponse({
+            status: 'success',
+            content: content.replace(/\*/g, '').trim()
+        });
+
+    } catch (err) {
+        Logger.log('Erro Groq: ' + sanitizeLog(err.message));
+        return jsonResponse({
+            status: 'fallback',
+            message: 'IA indisponível. Verifique sua conexão.',
+            content: ''
+        });
+    }
+}
+
+/* ============================================
+   Utilitários
+   ============================================ */
+
+function jsonResponse(data, code) {
+    return ContentService.createTextOutput(JSON.stringify(data))
+        .setMimeType(ContentService.MimeType.JSON);
+}
+
+function sanitizeField(str) {
+    if (!str) return '';
+    return String(str).substring(0, MAX_FIELD_LENGTH).replace(/[<>]/g, '');
+}
+
+function sanitizeFileName(name) {
+    if (!name) return 'pta_' + Date.now() + '.pdf';
+    return String(name).replace(/[^a-zA-Z0-9_\-.]/g, '_').substring(0, 200);
+}
+
+function sanitizeLog(msg) {
+    if (!msg) return '';
+    return String(msg).replace(/\n/g, ' ').substring(0, 200);
+}
+
+function getOrCreateFolder_(folderName) {
+    const parentFolders = DriveApp.getFoldersByName(folderName);
+    if (parentFolders.hasNext()) {
+        return parentFolders.next();
+    }
+    const folder = DriveApp.createFolder(folderName);
+    folder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    return folder;
+}
+
+/* ============================================
+   Menu da Planilha
+   ============================================ */
+
+function onOpen() {
+    SpreadsheetApp.getUi()
+        .createMenu('GRUPO SRF Segurança 4.0')
+        .addItem('Inserir/Corrigir Cabeçalhos', 'setupHeaders')
+        .addItem('Verificar configuração da IA', 'checkAIConfig')
+        .addToUi();
+}
+
+function setupHeaders() {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName('Dados PTA');
     if (!sheet) {
-      sheet = spreadsheet.insertSheet(PTA_CONFIG.SHEET_NAME);
-      aplicarCabecalhos_(sheet);
-    } else if (sheet.getRange('A1').getValue() !== PTA_HEADERS[0]) {
-      aplicarCabecalhos_(sheet);
+        sheet = ss.insertSheet('Dados PTA');
     }
 
-    var row = [
-      limitarTexto_(data.emissao, 100),
-      limitarTexto_(data.termino, 100),
-      limitarTexto_(data.maoObra, 100),
-      numeroSeguro_(data.qtdTrabalhadores, 0, 100),
-      limitarTexto_(data.nomesEquipe, 5000),
-      limitarTexto_(data.local, 500),
-      limitarTexto_(data.altura, 50),
-      limitarTexto_(data.tarefa, 5000),
-      limitarTexto_(data.clima, 1500),
-      limitarTexto_(data.epis, 2500),
-      limitarTexto_(data.epcs, 2500),
-      limitarTexto_(data.riscos, 10000),
-      limitarTexto_(data.resgate, 10000),
-      limitarTexto_(data.emissor, 500),
-      limitarTexto_(data.supervisor, 500),
-      fileUrl
+    const headers = [
+        'Data Registro', 'Emissão', 'Término', 'Mão de Obra', 'Qtd Trabalhadores',
+        'Nomes Equipe', 'Local', 'Altura', 'Tarefa', 'Clima', 'EPIs', 'EPCs',
+        'Riscos', 'Plano Resgate', 'Emissor', 'Supervisor', 'Checklist',
+        'Nome Arquivo', 'URL Drive', 'Versão'
     ];
 
-    sheet.appendRow(row);
-    var lastRow = sheet.getLastRow();
-    sheet.getRange(lastRow, 1, 1, row.length)
-      .setVerticalAlignment('top')
-      .setWrap(true);
-    SpreadsheetApp.flush();
-  } catch (error) {
+    const existingHeaders = sheet.getRange(1, 1, 1, headers.length).getValues()[0];
+    const hasHeaders = existingHeaders.some(h => h && String(h).trim() !== '');
+
+    if (!hasHeaders) {
+        sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+        sheet.getRange(1, 1, 1, headers.length)
+            .setFontWeight('bold')
+            .setBackground('#FFC107')
+            .setFontColor('#000000');
+        sheet.setFrozenRows(1);
+        SpreadsheetApp.getUi().alert('Cabeçalhos inseridos com sucesso!');
+    } else {
+        const ui = SpreadsheetApp.getUi();
+        const response = ui.alert(
+            'Cabeçalhos existentes',
+            'Já existem cabeçalhos. Deseja substituí-los?',
+            ui.ButtonSet.YES_NO
+        );
+        if (response === ui.Button.YES) {
+            sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+            sheet.getRange(1, 1, 1, headers.length)
+                .setFontWeight('bold')
+                .setBackground('#FFC107')
+                .setFontColor('#000000');
+            ui.alert('Cabeçalhos atualizados!');
+        }
+    }
+}
+
+function checkAIConfig() {
+    const props = PropertiesService.getScriptProperties();
+    const apiKey = props.getProperty('GROQ_API_KEY');
+    const model = props.getProperty('GROQ_MODEL') || 'llama-3.3-70b-versatile';
+
+    const configured = !!(apiKey && apiKey.length > 10);
+    const status = configured ? 'Configurada' : 'NÃO configurada';
+
+    SpreadsheetApp.getUi().alert(
+        'Configuração da IA - GRUPO SRF',
+        'Status: ' + status + '\n' +
+        'Modelo: ' + model + '\n' +
+        'Versão: ' + APP_VERSION + '\n\n' +
+        (configured ? 'A chave está segura nas Propriedades do Script.' : 'Configure a propriedade GROQ_API_KEY nas Propriedades do Script.')
+    );
+}
+
+/* ============================================
+   FORMALIZACAO DE TESTES
+   ============================================ */
+
+function handleFormalizationSave(body) {
+    const lock = LockService.getScriptLock();
     try {
-      file.setTrashed(true);
-    } catch (cleanupError) {
-      console.error('[PTA_BACKEND][CLEANUP] ' + sanitizarLog_(cleanupError));
-    }
-    throw error;
-  } finally {
-    lock.releaseLock();
-  }
-
-  return {fileUrl: fileUrl};
-}
-
-function processarIaNr35_(type, data) {
-  validarClienteIa_(data);
-  aplicarLimiteIa_(data.clientId);
-
-  var context = data.context || {};
-  var descricao = limitarTexto_(context.descricao, PTA_CONFIG.MAX_TEXT_LENGTH);
-  if (!descricao) {
-    throw criarErro_('MISSING_DESCRIPTION', 'Preencha a descrição da atividade.');
-  }
-
-  var properties = PropertiesService.getScriptProperties();
-  var apiKey = properties.getProperty('GROQ_API_KEY');
-  if (!apiKey) {
-    throw criarErro_('AI_NOT_CONFIGURED', 'A IA ainda não está configurada no servidor.');
-  }
-
-  var model = properties.getProperty('GROQ_MODEL') || PTA_CONFIG.DEFAULT_GROQ_MODEL;
-  var prompt = montarPromptNr35_(type, context);
-  var maxTokens = type === 'RISKS' ? 1300 : 1100;
-
-  var payload = {
-    model: model,
-    temperature: 0.15,
-    max_tokens: maxTokens,
-    messages: [
-      {
-        role: 'system',
-        content: 'Você é um assistente técnico de Segurança do Trabalho especializado em NR-35. Produza apoio técnico objetivo em português do Brasil. Não invente dados, certificados, equipamentos disponíveis ou condições que não foram informadas. A resposta deve ser revisada e aprovada pelo responsável de SST antes da liberação da atividade.'
-      },
-      {
-        role: 'user',
-        content: prompt
-      }
-    ]
-  };
-
-  var response;
-  try {
-    response = UrlFetchApp.fetch(PTA_CONFIG.GROQ_URL, {
-      method: 'post',
-      contentType: 'application/json',
-      headers: {Authorization: 'Bearer ' + apiKey},
-      payload: JSON.stringify(payload),
-      muteHttpExceptions: true,
-      followRedirects: true
-    });
-  } catch (error) {
-    throw criarErro_('AI_NETWORK_ERROR', 'A IA está temporariamente indisponível.');
-  }
-
-  var statusCode = response.getResponseCode();
-  var bodyText = response.getContentText() || '{}';
-  var body;
-
-  try {
-    body = JSON.parse(bodyText);
-  } catch (error) {
-    throw criarErro_('AI_INVALID_RESPONSE', 'A IA retornou uma resposta inválida.');
-  }
-
-  if (statusCode < 200 || statusCode >= 300) {
-    console.error('[GROQ] HTTP ' + statusCode + ' | ' + limitarTexto_(bodyText, 500));
-    if (statusCode === 401 || statusCode === 403) {
-      throw criarErro_('AI_AUTH_ERROR', 'A configuração da IA precisa ser atualizada.');
-    }
-    if (statusCode === 429) {
-      throw criarErro_('AI_RATE_LIMIT', 'O limite temporário da IA foi atingido.');
-    }
-    throw criarErro_('AI_SERVICE_ERROR', 'A IA está temporariamente indisponível.');
-  }
-
-  var text = body && body.choices && body.choices[0] && body.choices[0].message
-    ? String(body.choices[0].message.content || '').trim()
-    : '';
-
-  if (!text) {
-    throw criarErro_('AI_EMPTY_RESPONSE', 'A IA não retornou conteúdo útil.');
-  }
-
-  return {
-    text: limitarTexto_(text, 12000),
-    source: 'groq',
-    model: model
-  };
-}
-
-function montarPromptNr35_(type, context) {
-  var dados = [
-    'ATIVIDADE: ' + limitarTexto_(context.descricao, PTA_CONFIG.MAX_TEXT_LENGTH),
-    'LOCAL: ' + (limitarTexto_(context.local, 500) || 'Não informado'),
-    'ALTURA APROXIMADA: ' + (limitarTexto_(context.altura, 50) || 'Não informada') + ' m',
-    'CLIMA: ' + (limitarTexto_(context.clima, 1000) || 'Não informado'),
-    'EPIs INFORMADOS: ' + (limitarTexto_(context.epis, 1500) || 'Não informados'),
-    'EPCs INFORMADOS: ' + (limitarTexto_(context.epcs, 1500) || 'Não informados'),
-    'CHECKLIST: ' + (limitarTexto_(context.checklist, 2500) || 'Não informado')
-  ].join('\n');
-
-  if (type === 'RISKS') {
-    return [
-      'Analise os dados abaixo e gere de 4 a 7 riscos relevantes e suas medidas de controle.',
-      'Priorize queda de pessoas, queda de objetos, acesso, ancoragem, clima, energia, ferramentas, isolamento e resposta a emergências quando aplicável.',
-      'Não afirme que um item foi inspecionado ou aprovado se isso não estiver explícito nos dados.',
-      'Use exatamente este formato, sem introdução e sem conclusão:',
-      '1. RISCO: descrição objetiva',
-      '   MEDIDA: controle preventivo objetivo e executável',
-      '',
-      dados
-    ].join('\n');
-  }
-
-  return [
-    'Elabore um plano de resgate específico e executável para a atividade abaixo.',
-    'Inclua preparação antes do início, comunicação, isolamento, equipe capacitada, sistema de resgate e ancoragem independente, redução do tempo de suspensão, primeiros socorros, acionamento do SAMU 192 ou Bombeiros 193 quando necessário e critérios para retomada.',
-    'Não presuma que equipamentos ou profissionais existem; quando necessário, use a expressão “confirmar previamente”.',
-    'Apresente um título e de 6 a 9 etapas numeradas. Não use tabelas.',
-    '',
-    dados
-  ].join('\n');
-}
-
-function aplicarLimiteIa_(clientIdRaw) {
-  var clientId = sanitizarClientId_(clientIdRaw);
-  var now = new Date();
-  var minuteKey = Utilities.formatDate(now, 'GMT', 'yyyyMMddHHmm');
-  var dayKey = Utilities.formatDate(now, Session.getScriptTimeZone() || 'America/Sao_Paulo', 'yyyyMMdd');
-  var cache = CacheService.getScriptCache();
-  var properties = PropertiesService.getScriptProperties();
-  var lock = LockService.getScriptLock();
-
-  lock.waitLock(5000);
-  try {
-    var clientCacheKey = 'AI_CLIENT_' + clientId + '_' + minuteKey;
-    var globalCacheKey = 'AI_GLOBAL_' + minuteKey;
-    var clientCount = Number(cache.get(clientCacheKey) || 0);
-    var globalCount = Number(cache.get(globalCacheKey) || 0);
-
-    if (clientCount >= PTA_CONFIG.AI_CLIENT_MINUTE_LIMIT) {
-      throw criarErro_('AI_CLIENT_RATE_LIMIT', 'Aguarde um minuto antes de solicitar outra análise.');
-    }
-    if (globalCount >= PTA_CONFIG.AI_GLOBAL_MINUTE_LIMIT) {
-      throw criarErro_('AI_GLOBAL_RATE_LIMIT', 'O serviço está temporariamente ocupado.');
+        lock.waitLock(30000);
+    } catch (e) {
+        return jsonResponse({ status: 'error', message: 'Sistema ocupado. Tente novamente.' }, 503);
     }
 
-    var dailyKey = 'AI_DAILY_' + dayKey;
-    var dailyCount = Number(properties.getProperty(dailyKey) || 0);
-    if (dailyCount >= PTA_CONFIG.AI_GLOBAL_DAILY_LIMIT) {
-      throw criarErro_('AI_DAILY_LIMIT', 'O limite diário de IA foi atingido.');
+    try {
+        if (!body.formalization || typeof body.formalization !== 'object') {
+            return jsonResponse({ status: 'error', message: 'Formaliza��o inv�lida.' }, 400);
+        }
+        const formalization = body.formalization;
+        if (!formalization.id || !formalization.number) {
+            return jsonResponse({ status: 'error', message: 'Identificador e n�mero obrigat�rios.' }, 400);
+        }
+
+        const ss = SpreadsheetApp.getActiveSpreadsheet();
+        const sheet = ss.getSheetByName('Dados Formalizacao') || ss.insertSheet('Dados Formalizacao');
+        if (sheet.getLastRow() === 0) {
+            sheet.appendRow(['ID', 'N�mero', 'T�tulo', 'Situa��o', 'Revis�o', 'Atualizado em', 'JSON']);
+        }
+
+        const values = sheet.getDataRange().getValues();
+        let rowIndex = -1;
+        for (let i = 1; i < values.length; i++) {
+            if (String(values[i][0]) === String(formalization.id)) {
+                rowIndex = i + 1;
+                break;
+            }
+        }
+
+        const row = [
+            formalization.id,
+            formalization.number,
+            sanitizeField(formalization.title),
+            sanitizeField(formalization.status),
+            sanitizeField(formalization.revision),
+            new Date().toISOString(),
+            JSON.stringify(formalization)
+        ];
+
+        if (rowIndex > 0) {
+            sheet.getRange(rowIndex, 1, 1, row.length).setValues([row]);
+        } else {
+            sheet.appendRow(row);
+        }
+
+        return jsonResponse({
+            status: 'success',
+            message: 'Formaliza��o salva.',
+            formalizationId: formalization.id,
+            savedAt: new Date().toISOString()
+        });
+    } catch (err) {
+        Logger.log('Erro FORMALIZATION_SAVE: ' + sanitizeLog(err.message));
+        return jsonResponse({ status: 'error', message: 'Erro ao salvar formaliza��o: ' + sanitizeLog(err.message) }, 500);
+    } finally {
+        lock.releaseLock();
+    }
+}
+
+function handleFormalizationList(body) {
+    try {
+        const ss = SpreadsheetApp.getActiveSpreadsheet();
+        const sheet = ss.getSheetByName('Dados Formalizacao');
+        if (!sheet) {
+            return jsonResponse({ status: 'success', items: [] });
+        }
+        const values = sheet.getDataRange().getValues();
+        const items = [];
+        for (let i = 1; i < values.length; i++) {
+            let record = null;
+            try { record = JSON.parse(String(values[i][6] || '{}')); } catch (e) { record = null; }
+            if (!record) continue;
+            items.push({
+                id: values[i][0],
+                number: values[i][1],
+                title: values[i][2],
+                status: values[i][3],
+                revision: values[i][4],
+                updatedAt: values[i][5],
+                products: (record.products || []).map(function (p) { return p.name; })
+            });
+        }
+        return jsonResponse({ status: 'success', items: items });
+    } catch (err) {
+        Logger.log('Erro FORMALIZATION_LIST: ' + sanitizeLog(err.message));
+        return jsonResponse({ status: 'error', message: 'Erro ao listar formaliza��es.' }, 500);
+    }
+}
+
+function handleFormalizationGet(body) {
+    try {
+        if (!body.id) {
+            return jsonResponse({ status: 'error', message: 'Identificador obrigat�rio.' }, 400);
+        }
+        const ss = SpreadsheetApp.getActiveSpreadsheet();
+        const sheet = ss.getSheetByName('Dados Formalizacao');
+        if (!sheet) {
+            return jsonResponse({ status: 'error', message: 'Formaliza��o n�o encontrada.' }, 404);
+        }
+        const values = sheet.getDataRange().getValues();
+        for (let i = 1; i < values.length; i++) {
+            if (String(values[i][0]) === String(body.id)) {
+                let record = null;
+                try { record = JSON.parse(String(values[i][6] || '{}')); } catch (e) { record = null; }
+                return jsonResponse({ status: 'success', formalization: record });
+            }
+        }
+        return jsonResponse({ status: 'error', message: 'Formaliza��o n�o encontrada.' }, 404);
+    } catch (err) {
+        Logger.log('Erro FORMALIZATION_GET: ' + sanitizeLog(err.message));
+        return jsonResponse({ status: 'error', message: 'Erro ao obter formaliza��o.' }, 500);
+    }
+}
+
+function handleSendFormalizationEmail(body) {
+    const lock = LockService.getScriptLock();
+    try {
+        lock.waitLock(30000);
+    } catch (e) {
+        return jsonResponse({ status: 'error', message: 'Sistema ocupado. Tente novamente.' }, 503);
     }
 
-    cache.put(clientCacheKey, String(clientCount + 1), 90);
-    cache.put(globalCacheKey, String(globalCount + 1), 90);
-    properties.setProperty(dailyKey, String(dailyCount + 1));
-    limparContadoresAntigos_(properties, dailyKey);
-  } finally {
-    lock.releaseLock();
-  }
-}
+    try {
+        if (!body.recipients || !body.recipients.to) {
+            return jsonResponse({ status: 'error', message: 'Destinat�rio obrigat�rio.' }, 400);
+        }
+        if (!body.idempotencyKey) {
+            return jsonResponse({ status: 'error', message: 'Chave de idempot�ncia obrigat�ria.' }, 400);
+        }
 
-function limparContadoresAntigos_(properties, currentKey) {
-  var all = properties.getProperties();
-  Object.keys(all).forEach(function(key) {
-    if (key.indexOf('AI_DAILY_') === 0 && key !== currentKey) {
-      properties.deleteProperty(key);
+        const props = PropertiesService.getScriptProperties();
+        const operationKey = 'FORMALIZATION_SEND_' + body.idempotencyKey;
+        const existing = props.getProperty(operationKey);
+        if (existing) {
+            let parsed = null;
+            try { parsed = JSON.parse(existing); } catch (e) { parsed = null; }
+            if (parsed && parsed.contentHash && body.contentHash && parsed.contentHash !== body.contentHash) {
+                return jsonResponse({ status: 'error', message: 'Conflito de idempot�ncia: conte�do diferente.' }, 409);
+            }
+            return jsonResponse({
+                status: 'success',
+                reused: true,
+                communicationId: body.communicationId,
+                message: 'Envio j� registrado.'
+            });
+        }
+
+        props.setProperty(operationKey, JSON.stringify({
+            status: 'processamento',
+            contentHash: body.contentHash || '',
+            createdAt: new Date().toISOString()
+        }));
+
+        const attachments = [];
+        if (Array.isArray(body.attachments)) {
+            body.attachments.forEach(function (att, index) {
+                if (att && att.base64) {
+                    const bytes = Utilities.base64Decode(att.base64);
+                    attachments.push(Utilities.newBlob(bytes, att.type || MimeType.PDF, att.name || ('anexo_' + index + '.pdf')));
+                }
+            });
+        }
+
+        const options = {
+            to: body.recipients.to,
+            subject: sanitizeField(body.subject),
+            body: sanitizeField(body.body),
+            name: 'Sistema-TS - Grupo SRF'
+        };
+        if (body.recipients.cc) options.cc = body.recipients.cc;
+        if (body.recipients.reply) options.replyTo = body.recipients.reply;
+        if (attachments.length) options.attachments = attachments;
+
+        MailApp.sendEmail(options);
+
+        props.setProperty(operationKey, JSON.stringify({
+            status: 'enviado',
+            contentHash: body.contentHash || '',
+            createdAt: new Date().toISOString()
+        }));
+
+        return jsonResponse({
+            status: 'success',
+            message: 'E-mail enviado.',
+            communicationId: body.communicationId,
+            sentAt: new Date().toISOString()
+        });
+    } catch (err) {
+        Logger.log('Erro SEND_FORMALIZATION_EMAIL: ' + sanitizeLog(err.message));
+        return jsonResponse({ status: 'error', message: 'Erro ao enviar e-mail: ' + sanitizeLog(err.message) }, 500);
+    } finally {
+        lock.releaseLock();
     }
-  });
-}
-
-function validarAplicacao_(data) {
-  if (!data || typeof data !== 'object') {
-    throw criarErro_('INVALID_REQUEST', 'Requisição inválida.');
-  }
-  if (data.appId && String(data.appId) !== PTA_CONFIG.APP_ID) {
-    throw criarErro_('INVALID_APP', 'Aplicação não autorizada.');
-  }
-}
-
-function validarClienteIa_(data) {
-  if (String(data.appId || '') !== PTA_CONFIG.APP_ID) {
-    throw criarErro_('INVALID_APP', 'Aplicação não autorizada.');
-  }
-  if (!data.clientId) {
-    throw criarErro_('INVALID_CLIENT', 'Identificação do cliente ausente.');
-  }
-}
-
-function aplicarCabecalhos_(sheet) {
-  var firstCellValue = String(sheet.getRange('A1').getValue() || '').trim();
-  if (firstCellValue && firstCellValue !== PTA_HEADERS[0]) {
-    sheet.insertRowBefore(1);
-  }
-
-  var headerRange = sheet.getRange(1, 1, 1, PTA_HEADERS.length);
-  headerRange.setValues([PTA_HEADERS]);
-  headerRange
-    .setFontWeight('bold')
-    .setBackground('#10261C')
-    .setFontColor('#86CB38')
-    .setWrap(true)
-    .setVerticalAlignment('middle')
-    .setHorizontalAlignment('center');
-
-  sheet.setFrozenRows(1);
-  sheet.setColumnWidth(5, 300);
-  sheet.setColumnWidth(8, 320);
-  sheet.setColumnWidth(12, 380);
-  sheet.setColumnWidth(13, 380);
-}
-
-function obterPasta_(folderName) {
-  var folders = DriveApp.getFoldersByName(folderName);
-  return folders.hasNext() ? folders.next() : DriveApp.createFolder(folderName);
-}
-
-function lerJsonRequisicao_(e) {
-  if (!e || !e.postData || !e.postData.contents) {
-    throw criarErro_('EMPTY_REQUEST', 'Requisição sem conteúdo.');
-  }
-  try {
-    return JSON.parse(e.postData.contents);
-  } catch (error) {
-    throw criarErro_('INVALID_JSON', 'O conteúdo recebido não é um JSON válido.');
-  }
-}
-
-function respostaJson_(payload) {
-  return ContentService
-    .createTextOutput(JSON.stringify(payload))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-function validarTextoObrigatorio_(value, label, maxLength) {
-  var text = String(value || '');
-  if (!text) {
-    throw criarErro_('MISSING_FIELD', label + ' não informado.');
-  }
-  if (text.length > maxLength) {
-    throw criarErro_('FIELD_TOO_LARGE', label + ' excede o limite permitido.');
-  }
-}
-
-function limitarTexto_(value, maxLength) {
-  return String(value == null ? '' : value).trim().substring(0, maxLength);
-}
-
-function numeroSeguro_(value, min, max) {
-  var number = Number(value);
-  if (!isFinite(number)) number = min;
-  return Math.max(min, Math.min(max, number));
-}
-
-function sanitizarNomeArquivo_(value) {
-  var name = String(value || 'PTA_GRUPO_SRF.pdf')
-    .replace(/[\\/:*?"<>|\u0000-\u001F]/g, '_')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .substring(0, 180);
-  if (!/\.pdf$/i.test(name)) name += '.pdf';
-  return name;
-}
-
-function sanitizarClientId_(value) {
-  var clientId = String(value || 'anonymous').replace(/[^a-zA-Z0-9_-]/g, '').substring(0, 80);
-  return clientId.length >= 8 ? clientId : 'anonymous';
-}
-
-function criarErro_(code, message) {
-  var error = new Error(message);
-  error.code = code;
-  return error;
-}
-
-function mensagemSegura_(error) {
-  var allowedCodes = {
-    ACTION_NOT_ALLOWED: true,
-    INVALID_REQUEST: true,
-    INVALID_APP: true,
-    INVALID_CLIENT: true,
-    EMPTY_REQUEST: true,
-    INVALID_JSON: true,
-    MISSING_FIELD: true,
-    FIELD_TOO_LARGE: true,
-    INVALID_PDF: true,
-    PDF_TOO_LARGE: true,
-    INVALID_PDF_BASE64: true,
-    MISSING_DESCRIPTION: true,
-    AI_NOT_CONFIGURED: true,
-    AI_NETWORK_ERROR: true,
-    AI_INVALID_RESPONSE: true,
-    AI_AUTH_ERROR: true,
-    AI_RATE_LIMIT: true,
-    AI_SERVICE_ERROR: true,
-    AI_EMPTY_RESPONSE: true,
-    AI_CLIENT_RATE_LIMIT: true,
-    AI_GLOBAL_RATE_LIMIT: true,
-    AI_DAILY_LIMIT: true
-  };
-  return error && allowedCodes[error.code]
-    ? String(error.message || 'Não foi possível concluir a solicitação.')
-    : 'Não foi possível concluir a solicitação.';
-}
-
-function sanitizarLog_(error) {
-  if (!error) return 'Erro desconhecido';
-  return String(error.stack || error.message || error)
-    .replace(/gsk_[a-zA-Z0-9_-]+/g, '[CHAVE_REMOVIDA]')
-    .substring(0, 2000);
 }

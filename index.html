@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#10261c">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -10,8 +10,10 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>PTA NR-35 | Grupo SRF | V1.8</title>
+  <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/svg+xml" href="assets/srf-logo.svg?v=1.8">
   <link rel="stylesheet" href="assets/styles-v1.8.css?v=1.8">
+  <link rel="stylesheet" href="assets/formalizacao.css?v=1.0">
 </head>
 <body>
   <header class="app-header">
@@ -22,12 +24,19 @@
       <div>
         <h1 class="brand-title">GRUPO SRF</h1>
         <p class="brand-subtitle">SEGURANÇA 4.0 · PTA NR-35 · V 1.8</p>
+        <p class="area-active" id="areaActive">Área ativa: PTA NR-35</p>
       </div>
     </div>
   </header>
 
-  <main class="container">
-    <form id="ptaForm">
+  <nav class="app-tabs" aria-label="Áreas do sistema">
+    <button type="button" class="tab-button active" data-view="pta" id="tabPta">PTA NR-35</button>
+    <button type="button" class="tab-button" data-view="formalizacao" id="tabFormalizacao">Formalização de Testes</button>
+  </nav>
+
+  <section id="viewPta" class="view active">
+    <main class="container">
+      <form id="ptaForm">
       <section class="card">
         <h2 class="section-title">1. Identificação</h2>
         <div class="grid">
@@ -183,6 +192,190 @@
       </footer>
     </form>
   </main>
+  </section>
+
+  <section id="viewFormalizacao" class="view" aria-labelledby="formalizacaoTitle">
+    <main class="container">
+      <div class="formalizacao-shell">
+        <div class="page-head">
+          <div>
+            <h1 id="formalizacaoTitle">Formalização de Testes</h1>
+            <p class="page-description">Reúna FDS, descreva o procedimento, revise e envie por e-mail, registre a resposta e consulte o histórico.</p>
+            <p class="save-status" id="saveStatus">Salvo neste dispositivo</p>
+          </div>
+          <button type="button" class="btn btn-primary" id="btnNewFormalizacao">Nova formalização</button>
+        </div>
+
+        <div class="toolbar">
+          <label class="field-label" for="searchFormalizacao">Buscar</label>
+          <input class="input" id="searchFormalizacao" type="search" placeholder="Número, título ou produto">
+          <label class="field-label" for="filterStatus">Situação</label>
+          <select class="input" id="filterStatus">
+            <option value="">Todas</option>
+            <option value="rascunho">Rascunho</option>
+            <option value="pronto">Pronto para envio</option>
+            <option value="enviado">Enviado</option>
+            <option value="resposta">Resposta registrada</option>
+            <option value="arquivado">Arquivado</option>
+          </select>
+          <label class="field-label" for="filterFrom">De</label>
+          <input class="input" id="filterFrom" type="date">
+          <label class="field-label" for="filterTo">Até</label>
+          <input class="input" id="filterTo" type="date">
+        </div>
+
+        <div id="formalizacaoList" class="list-area"></div>
+
+        <form id="formalizacaoForm" class="form-area" hidden>
+          <section class="card">
+            <h2 class="section-title">1. Identificação</h2>
+            <div class="grid">
+              <div>
+                <label class="field-label" for="f_test_number">Número</label>
+                <input class="input" id="f_test_number" type="text" readonly>
+              </div>
+              <div>
+                <label class="field-label" for="f_test_revision">Revisão</label>
+                <input class="input" id="f_test_revision" type="text" value="R0" readonly>
+              </div>
+              <div class="span-2">
+                <label class="field-label" for="f_test_title">Título do teste <span class="required">*</span></label>
+                <input class="input" id="f_test_title" type="text" required>
+              </div>
+              <div>
+                <label class="field-label" for="f_test_requester">Solicitante</label>
+                <input class="input" id="f_test_requester" type="text">
+              </div>
+              <div>
+                <label class="field-label" for="f_test_owner">Responsável pelo registro</label>
+                <input class="input" id="f_test_owner" type="text">
+              </div>
+              <div>
+                <label class="field-label" for="f_test_unit">Unidade/Local</label>
+                <input class="input" id="f_test_unit" type="text">
+              </div>
+              <div>
+                <label class="field-label" for="f_test_responsible">Responsável pelo teste</label>
+                <input class="input" id="f_test_responsible" type="text">
+              </div>
+              <div>
+                <label class="field-label" for="f_test_period">Data ou período previsto</label>
+                <input class="input" id="f_test_period" type="text" placeholder="Ex.: 20/11/2026 ou a definir">
+              </div>
+              <div>
+                <label class="field-label" for="f_test_status">Situação</label>
+                <select class="input" id="f_test_status">
+                  <option value="rascunho">Rascunho</option>
+                  <option value="pronto">Pronto para envio</option>
+                  <option value="enviado">Enviado</option>
+                  <option value="resposta">Resposta registrada</option>
+                  <option value="arquivado">Arquivado</option>
+                </select>
+              </div>
+              <div class="span-2">
+                <label class="field-label" for="f_test_objective">Objetivo</label>
+                <textarea id="f_test_objective" rows="3"></textarea>
+              </div>
+              <div class="span-2">
+                <label class="field-label" for="f_test_notes">Observações</label>
+                <textarea id="f_test_notes" rows="3"></textarea>
+              </div>
+              <div class="span-2">
+                <label class="field-label" for="f_test_pta_link">Vínculo com PTA (opcional)</label>
+                <input class="input" id="f_test_pta_link" type="text" placeholder="Número/ID do PTA relacionado">
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="section-head">
+              <h2 class="section-title">2. Produtos e FDS</h2>
+              <button type="button" class="btn" id="btnAddProduct">+ Adicionar produto</button>
+            </div>
+            <div id="productsContainer" class="stack"></div>
+            <p class="assist-note" id="fdsValidationSummary"></p>
+          </section>
+
+          <section class="card">
+            <h2 class="section-title">3. Procedimento</h2>
+            <div class="grid">
+              <div class="span-2">
+                <label class="field-label" for="f_proc_preparation">Preparação e condições iniciais</label>
+                <textarea id="f_proc_preparation" rows="3"></textarea>
+              </div>
+              <div class="span-2">
+                <label class="field-label" for="f_proc_products">Produtos, quantidades e unidades</label>
+                <textarea id="f_proc_products" rows="3"></textarea>
+              </div>
+              <div class="span-2">
+                <label class="field-label" for="f_proc_equipment">Equipamentos e recursos</label>
+                <textarea id="f_proc_equipment" rows="3"></textarea>
+              </div>
+              <div class="span-2">
+                <label class="field-label" for="f_proc_steps">Sequência das etapas e forma de aplicação</label>
+                <textarea id="f_proc_steps" rows="5"></textarea>
+              </div>
+              <div class="span-2">
+                <label class="field-label" for="f_proc_duration">Duração prevista e acompanhamento</label>
+                <textarea id="f_proc_duration" rows="3"></textarea>
+              </div>
+              <div class="span-2">
+                <label class="field-label" for="f_proc_sampling">Coleta de amostras e avaliação dos resultados</label>
+                <textarea id="f_proc_sampling" rows="3"></textarea>
+              </div>
+              <div class="span-2">
+                <label class="field-label" for="f_proc_safety">Observações de segurança e referências às FDS</label>
+                <textarea id="f_proc_safety" rows="3"></textarea>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2 class="section-title">4. E-mail</h2>
+            <div class="grid">
+              <div class="span-2">
+                <label class="field-label" for="f_email_to">Destinatário</label>
+                <input class="input" id="f_email_to" type="email" placeholder="E-mail da destinatária">
+              </div>
+              <div class="span-2">
+                <label class="field-label" for="f_email_cc">Cópias</label>
+                <input class="input" id="f_email_cc" type="text" placeholder="Separe por vírgula">
+              </div>
+              <div class="span-2">
+                <label class="field-label" for="f_email_reply">Endereço de resposta</label>
+                <input class="input" id="f_email_reply" type="email">
+              </div>
+              <div class="span-2">
+                <label class="field-label" for="f_email_subject">Assunto</label>
+                <input class="input" id="f_email_subject" type="text">
+              </div>
+              <div class="span-2">
+                <label class="field-label" for="f_email_body">Corpo da mensagem</label>
+                <textarea id="f_email_body" rows="8"></textarea>
+              </div>
+            </div>
+            <div class="actions">
+              <button type="button" class="btn" id="btnReviewEmail">Revisar e-mail</button>
+              <button type="button" class="btn btn-primary" id="btnSendEmail">Enviar e-mail</button>
+            </div>
+            <div id="emailReview" class="review-box" hidden></div>
+          </section>
+
+          <section class="card">
+            <h2 class="section-title">5. Histórico</h2>
+            <div id="historyList" class="history-list"></div>
+          </section>
+
+          <div class="actions">
+            <button type="button" class="btn" id="btnSaveDraft">Salvar rascunho</button>
+            <button type="button" class="btn" id="btnPreviewPdf">Pré-visualizar PDF</button>
+            <button type="button" class="btn" id="btnExportDocs">Exportar documentação</button>
+            <button type="button" class="btn btn-red" id="btnRegisterResponse">Registrar resposta</button>
+          </div>
+        </form>
+      </div>
+    </main>
+  </section>
 
   <div id="toast" class="toast" role="status"></div>
 
@@ -251,5 +444,13 @@
   </div>
 
   <script src="assets/app-v1.8.js?v=1.8" defer></script>
+  <script src="assets/formalizacao.js?v=1.4" defer></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(error => console.warn('SW:', error));
+      });
+    }
+  </script>
 </body>
 </html>
