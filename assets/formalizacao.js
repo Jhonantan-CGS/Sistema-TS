@@ -16,7 +16,7 @@ const state = {
 const $f = id => document.getElementById(id);
 const escapeHtmlForm = (value = '') => String(value).replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
 
-function toast(message, timeout = 4500) {
+function toastForm(message, timeout = 4500) {
   const element = $f('toast');
   if (!element) return;
   element.textContent = message;
@@ -25,7 +25,7 @@ function toast(message, timeout = 4500) {
   toast.timer = setTimeout(() => element.classList.remove('visible'), timeout);
 }
 
-function setBusy(button, busy, text) {
+function setBusyForm(button, busy, text) {
   if (!button) return;
   if (busy) {
     if (!button.dataset.originalText) button.dataset.originalText = button.textContent;
@@ -254,7 +254,7 @@ function renderList() {
   });
 }
 
-function newFormalizacao() {
+async function newFormalizacao() {
   const record = createEmptyRecord();
   state.records.unshift(record);
   state.currentId = record.id;
@@ -262,8 +262,8 @@ function newFormalizacao() {
   addHistory(record, 'Formalização criada');
   renderForm(record);
   renderList();
-  updateSaveStatus('Salvo neste dispositivo');
-  toast('Nova formalização criada.');
+  await saveDraft(true);
+  toastForm('Nova formalização criada.');
 }
 
 function openRecord(id) {
@@ -321,7 +321,10 @@ function collectForm() {
   record.unit = getValue('f_test_unit').trim();
   record.responsible = getValue('f_test_responsible').trim();
   record.period = getValue('f_test_period').trim();
-  record.status = getValue('f_test_status');
+  const selectedStatus = getValue('f_test_status');
+  if (['rascunho', 'pronto', 'arquivado'].includes(selectedStatus)) {
+    record.status = selectedStatus;
+  }
   record.objective = getValue('f_test_objective').trim();
   record.notes = getValue('f_test_notes').trim();
   record.ptaLink = getValue('f_test_pta_link').trim();
@@ -460,7 +463,7 @@ async function attachFds(productId, file) {
   const product = record?.products.find(item => item.id === productId);
   if (!product) return;
   if (file.type !== 'application/pdf') {
-    toast('Selecione um arquivo PDF para a FDS.');
+    toastForm('Selecione um arquivo PDF para a FDS.');
     return;
   }
   const revision = prompt('Revisão da FDS (deixe em branco se não constar):', product.fds?.revision || '');
@@ -485,9 +488,9 @@ async function attachFds(productId, file) {
     renderProducts();
     updateFdsValidation();
     markDirty();
-    toast('FDS anexada neste dispositivo.');
+    toastForm('FDS anexada neste dispositivo.');
   } catch (error) {
-    toast('Não foi possível ler a FDS. Tente novamente.');
+    toastForm('Não foi possível ler a FDS. Tente novamente.');
   }
 }
 
@@ -495,7 +498,7 @@ function openFds(productId) {
   const record = getRecord();
   const product = record?.products.find(item => item.id === productId);
   if (!product?.fds?.dataUrl) {
-    toast('Arquivo da FDS não disponível.');
+    toastForm('Arquivo da FDS não disponível.');
     return;
   }
   const link = document.createElement('a');
@@ -532,18 +535,35 @@ function updateSaveStatus(text) {
   if (element) element.textContent = text;
 }
 
+async function syncFormalization(record) {
+  try {
+    const result = await postBackendForm({ action: 'FORMALIZATION_SAVE', formalization: record });
+    if (result.status === 'success') {
+      record.syncStatus = 'server';
+      return true;
+    }
+  } catch (_) {}
+  record.syncStatus = 'local';
+  return false;
+}
+
 async function saveDraft(silent = false) {
   const record = collectForm();
-  if (!record) return;
+  if (!record) {
+    updateSaveStatus('Nenhuma formalização ativa');
+    if (!silent) toastForm('Crie ou abra uma formalização antes de salvar.');
+    return;
+  }
   record.syncStatus = 'local';
   try {
     await dbPut(record);
     state.dirty = false;
-    updateSaveStatus('Salvo neste dispositivo');
-    if (!silent) toast('Rascunho salvo neste dispositivo.');
+    const synced = await syncFormalization(record);
+    updateSaveStatus(synced ? 'Salvo no sistema' : 'Salvo neste dispositivo');
+    if (!silent) toastForm(synced ? 'Formalização salva no sistema.' : 'Rascunho salvo neste dispositivo.');
   } catch (error) {
     updateSaveStatus('Alterações ainda não sincronizadas');
-    if (!silent) toast('Não foi possível salvar o rascunho localmente.');
+    if (!silent) toastForm('Não foi possível salvar o rascunho localmente.');
   }
 }
 
@@ -553,11 +573,13 @@ function validateForSend() {
   const errors = [];
   if (!record.title) errors.push('Informe o título do teste.');
   if (!record.procedure.steps && !record.procedure.preparation) errors.push('Descreva o procedimento do teste.');
-  if (!record.email.to) errors.push('Informe o e-mail da destinatária antes de revisar a mensagem.');
+  if (!record.email.to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(record.email.to)) errors.push('Informe um e-mail válido da destinatária antes de revisar a mensagem.');
+  if (!record.products.length) errors.push('Adicione ao menos um produto.');
+  if (record.products.some(p => !p.name.trim())) errors.push('Informe o nome de todos os produtos.');
   const missingFds = record.products.filter(product => !product.fds);
   if (missingFds.length) errors.push(`Adicione a FDS do produto ${missingFds.map(p => p.name || 'sem nome').join(', ')} para concluir este envio.`);
   if (errors.length) {
-    toast(errors[0]);
+    toastForm(errors[0]);
     return false;
   }
   return true;
@@ -584,7 +606,7 @@ function reviewEmail() {
   const record = collectForm();
   if (!record) return;
   if (!record.email.to) {
-    toast('Informe o e-mail da destinatária antes de revisar a mensagem.');
+    toastForm('Informe o e-mail da destinatária antes de revisar a mensagem.');
     return;
   }
   if (!record.email.subject) {
@@ -620,7 +642,7 @@ function reviewEmail() {
   $f('btnConfirmSend').addEventListener('click', () => sendEmail());
 }
 
-async function postBackend(payload) {
+async function postBackendForm(payload) {
   const response = await fetch(FORMALIZATION_APPS_SCRIPT_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -642,13 +664,21 @@ async function sendEmail() {
   if (state.sending) return;
   const record = collectForm();
   if (!record || !validateForSend()) return;
+  await ensurePdfLibrariesForm();
   state.sending = true;
   const button = $f('btnSendEmail');
-  setBusy(button, true, 'Enviando...');
-  await ensurePdfLibraries();
-  const idempotencyKey = `send_${record.id}_${record.revision}_${Date.now()}`;
-  const pdfBase64 = generatePdfBlob(record).output('datauristring').split(',')[1];
-  const attachments = [
+  setBusyForm(button, true, 'Enviando...');
+
+  try {
+    const contentHash = await sha256(new TextEncoder().encode(JSON.stringify({
+      recipients: record.email,
+      subject: record.email.subject,
+      body: record.email.body,
+      attachments: record.products.map(p => p.fds?.name)
+    })));
+    const idempotencyKey = `send_${record.id}_${record.revision}_${contentHash}`;
+    const pdfBase64 = generatePdfBlob(record).output('datauristring').split(',')[1];
+    const attachments = [
     { name: `Formalizacao_${record.number}_${record.revision}.pdf`, type: 'application/pdf', base64: pdfBase64 },
     ...record.products.map(product => ({
       name: product.fds.name,
@@ -674,8 +704,7 @@ async function sendEmail() {
   addHistory(record, 'Tentativa de envio iniciada', [communication.id]);
   await saveDraft(true);
 
-  try {
-    const result = await postBackend({
+    const result = await postBackendForm({
       action: 'SEND_FORMALIZATION_EMAIL',
       formalizationId: record.id,
       communicationId: communication.id,
@@ -693,16 +722,16 @@ async function sendEmail() {
     record.status = 'enviado';
     addHistory(record, 'E-mail enviado com sucesso', [communication.id]);
     await saveDraft(true);
-    toast('E-mail enviado e registrado no sistema.');
+    toastForm('E-mail enviado e registrado no sistema.');
   } catch (error) {
     communication.status = 'confirmacao_pendente';
     communication.error = error.message;
     addHistory(record, 'Confirmação de envio pendente', [communication.id]);
     await saveDraft(true);
-    toast('Não foi possível confirmar o envio. Consulte a situação desta comunicação antes de tentar novamente.', 7000);
+    toastForm('Não foi possível confirmar o envio. Consulte a situação desta comunicação antes de tentar novamente.', 7000);
   } finally {
     state.sending = false;
-    setBusy(button, false);
+    setBusyForm(button, false);
     renderForm(record);
   }
 }
@@ -801,7 +830,7 @@ function generatePdfBlob(record) {
   return pdf;
 }
 
-async function ensurePdfLibraries() {
+async function ensurePdfLibrariesForm() {
   const loadScript = (url) => new Promise((resolve, reject) => {
     if (document.querySelector(`script[src="${url}"]`)) { resolve(); return; }
     const script = document.createElement('script');
@@ -820,13 +849,13 @@ async function previewPdf() {
   const record = collectForm();
   if (!record) return;
   try {
-    await ensurePdfLibraries();
+    await ensurePdfLibrariesForm();
     const pdf = generatePdfBlob(record);
     const url = pdf.output('bloburl');
     window.open(url, '_blank', 'noopener');
-    toast('Pré-visualização do PDF aberta.');
+    toastForm('Pré-visualização do PDF aberta.');
   } catch (error) {
-    toast('Não foi possível gerar a pré-visualização do PDF.');
+    toastForm('Não foi possível gerar a pré-visualização do PDF.');
   }
 }
 
@@ -845,7 +874,7 @@ function exportDocumentation() {
   link.download = `formalizacao_${record.number}_${record.revision}.json`;
   link.click();
   URL.revokeObjectURL(url);
-  toast('Documentação exportada.');
+  toastForm('Documentação exportada.');
 }
 
 function renderHistory(record) {
@@ -878,6 +907,8 @@ async function registerResponse() {
     if (!file) return;
     const sender = prompt('Remetente da resposta (conforme a mensagem recebida):', '');
     if (sender === null) return;
+    const receivedAt = prompt('Data/hora de recebimento da resposta (deixe em branco para usar agora):', '');
+    if (receivedAt === null) return;
     const content = prompt('Conteúdo ou resumo fiel da resposta:', '');
     if (content === null) return;
     try {
@@ -888,11 +919,12 @@ async function registerResponse() {
         id: crypto.randomUUID ? crypto.randomUUID() : `resp_${Date.now()}`,
         communicationId: record.communications.length ? record.communications[record.communications.length - 1].id : null,
         sender: sender.trim(),
-        receivedAt: nowIso(),
+        receivedAt: receivedAt.trim() || nowIso(),
+        registeredAt: nowIso(),
         registeredBy: record.owner || 'Usuário local',
         content: content.trim(),
         sourceType: file.name.toLowerCase().endsWith('.eml') ? 'eml' : 'pdf',
-        manual: content.trim().length > 0,
+        manual: true,
         file: {
           name: file.name,
           type: file.type || 'application/octet-stream',
@@ -906,9 +938,9 @@ async function registerResponse() {
       record.status = 'resposta';
       await saveDraft(true);
       renderHistory(record);
-      toast('Resposta registrada. O teste não foi aprovado automaticamente.');
+      toastForm('Resposta registrada. O teste não foi aprovado automaticamente.');
     } catch (error) {
-      toast('Não foi possível registrar a resposta.');
+      toastForm('Não foi possível registrar a resposta.');
     }
   };
   input.click();
@@ -926,7 +958,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     state.db = await openDb();
     state.records = await dbAll();
   } catch (error) {
-    toast('Armazenamento local indisponível. Algumas funções serão limitadas.');
+    toastForm('Armazenamento local indisponível. Algumas funções serão limitadas.');
     state.records = [];
   }
 

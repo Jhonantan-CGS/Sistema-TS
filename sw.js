@@ -7,7 +7,7 @@ const CORE_ASSETS = [
   './assets/styles-v1.8.css?v=1.8',
   './assets/formalizacao.css?v=1.0',
   './assets/app-v1.8.js?v=1.8',
-  './assets/formalizacao.js?v=1.1',
+  './assets/formalizacao.js?v=1.4',
   './assets/srf-logo.svg?v=1.8'
 ];
 
@@ -43,7 +43,7 @@ self.addEventListener('fetch', event => {
           caches.open(CACHE_NAME).then(cache => cache.put('./index.html', copy));
           return response;
         })
-        .catch(() => caches.match('./offline.html').then(response => response || caches.match('./index.html')))
+        .catch(() => caches.match('./index.html').then(response => response || caches.match('./offline.html')))
     );
     return;
   }

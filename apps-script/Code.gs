@@ -150,7 +150,6 @@ function handleSavePdf(body) {
             sanitizeFileName(body.fileName)
         );
         const file = folder.createFile(blob);
-        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
         const fileUrl = file.getUrl();
 
         const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -360,7 +359,6 @@ function getOrCreateFolder_(folderName) {
         return parentFolders.next();
     }
     const folder = DriveApp.createFolder(folderName);
-    folder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
     return folder;
 }
 
@@ -450,17 +448,17 @@ function handleFormalizationSave(body) {
 
     try {
         if (!body.formalization || typeof body.formalization !== 'object') {
-            return jsonResponse({ status: 'error', message: 'Formalização inválida.' }, 400);
+            return jsonResponse({ status: 'error', message: 'Formalizaï¿½ï¿½o invï¿½lida.' }, 400);
         }
         const formalization = body.formalization;
         if (!formalization.id || !formalization.number) {
-            return jsonResponse({ status: 'error', message: 'Identificador e número obrigatórios.' }, 400);
+            return jsonResponse({ status: 'error', message: 'Identificador e nï¿½mero obrigatï¿½rios.' }, 400);
         }
 
         const ss = SpreadsheetApp.getActiveSpreadsheet();
         const sheet = ss.getSheetByName('Dados Formalizacao') || ss.insertSheet('Dados Formalizacao');
         if (sheet.getLastRow() === 0) {
-            sheet.appendRow(['ID', 'Número', 'Título', 'Situação', 'Revisão', 'Atualizado em', 'JSON']);
+            sheet.appendRow(['ID', 'Nï¿½mero', 'Tï¿½tulo', 'Situaï¿½ï¿½o', 'Revisï¿½o', 'Atualizado em', 'JSON']);
         }
 
         const values = sheet.getDataRange().getValues();
@@ -490,13 +488,13 @@ function handleFormalizationSave(body) {
 
         return jsonResponse({
             status: 'success',
-            message: 'Formalização salva.',
+            message: 'Formalizaï¿½ï¿½o salva.',
             formalizationId: formalization.id,
             savedAt: new Date().toISOString()
         });
     } catch (err) {
         Logger.log('Erro FORMALIZATION_SAVE: ' + sanitizeLog(err.message));
-        return jsonResponse({ status: 'error', message: 'Erro ao salvar formalização: ' + sanitizeLog(err.message) }, 500);
+        return jsonResponse({ status: 'error', message: 'Erro ao salvar formalizaï¿½ï¿½o: ' + sanitizeLog(err.message) }, 500);
     } finally {
         lock.releaseLock();
     }
@@ -528,19 +526,19 @@ function handleFormalizationList(body) {
         return jsonResponse({ status: 'success', items: items });
     } catch (err) {
         Logger.log('Erro FORMALIZATION_LIST: ' + sanitizeLog(err.message));
-        return jsonResponse({ status: 'error', message: 'Erro ao listar formalizações.' }, 500);
+        return jsonResponse({ status: 'error', message: 'Erro ao listar formalizaï¿½ï¿½es.' }, 500);
     }
 }
 
 function handleFormalizationGet(body) {
     try {
         if (!body.id) {
-            return jsonResponse({ status: 'error', message: 'Identificador obrigatório.' }, 400);
+            return jsonResponse({ status: 'error', message: 'Identificador obrigatï¿½rio.' }, 400);
         }
         const ss = SpreadsheetApp.getActiveSpreadsheet();
         const sheet = ss.getSheetByName('Dados Formalizacao');
         if (!sheet) {
-            return jsonResponse({ status: 'error', message: 'Formalização não encontrada.' }, 404);
+            return jsonResponse({ status: 'error', message: 'Formalizaï¿½ï¿½o nï¿½o encontrada.' }, 404);
         }
         const values = sheet.getDataRange().getValues();
         for (let i = 1; i < values.length; i++) {
@@ -550,10 +548,10 @@ function handleFormalizationGet(body) {
                 return jsonResponse({ status: 'success', formalization: record });
             }
         }
-        return jsonResponse({ status: 'error', message: 'Formalização não encontrada.' }, 404);
+        return jsonResponse({ status: 'error', message: 'Formalizaï¿½ï¿½o nï¿½o encontrada.' }, 404);
     } catch (err) {
         Logger.log('Erro FORMALIZATION_GET: ' + sanitizeLog(err.message));
-        return jsonResponse({ status: 'error', message: 'Erro ao obter formalização.' }, 500);
+        return jsonResponse({ status: 'error', message: 'Erro ao obter formalizaï¿½ï¿½o.' }, 500);
     }
 }
 
@@ -567,10 +565,10 @@ function handleSendFormalizationEmail(body) {
 
     try {
         if (!body.recipients || !body.recipients.to) {
-            return jsonResponse({ status: 'error', message: 'Destinatário obrigatório.' }, 400);
+            return jsonResponse({ status: 'error', message: 'Destinatï¿½rio obrigatï¿½rio.' }, 400);
         }
         if (!body.idempotencyKey) {
-            return jsonResponse({ status: 'error', message: 'Chave de idempotência obrigatória.' }, 400);
+            return jsonResponse({ status: 'error', message: 'Chave de idempotï¿½ncia obrigatï¿½ria.' }, 400);
         }
 
         const props = PropertiesService.getScriptProperties();
@@ -580,13 +578,13 @@ function handleSendFormalizationEmail(body) {
             let parsed = null;
             try { parsed = JSON.parse(existing); } catch (e) { parsed = null; }
             if (parsed && parsed.contentHash && body.contentHash && parsed.contentHash !== body.contentHash) {
-                return jsonResponse({ status: 'error', message: 'Conflito de idempotência: conteúdo diferente.' }, 409);
+                return jsonResponse({ status: 'error', message: 'Conflito de idempotï¿½ncia: conteï¿½do diferente.' }, 409);
             }
             return jsonResponse({
                 status: 'success',
                 reused: true,
                 communicationId: body.communicationId,
-                message: 'Envio já registrado.'
+                message: 'Envio jï¿½ registrado.'
             });
         }
 
