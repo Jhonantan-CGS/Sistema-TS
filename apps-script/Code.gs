@@ -119,6 +119,18 @@ function doPost(e) {
       case 'AI_NR35_RESCUE':
         result = processarIaNr35_('RESCUE', data);
         break;
+      case 'FORMALIZATION_SAVE':
+        result = salvarFormalizacao_(data);
+        break;
+      case 'FORMALIZATION_LIST':
+        result = listarFormalizacoes_(data);
+        break;
+      case 'FORMALIZATION_GET':
+        result = obterFormalizacao_(data);
+        break;
+      case 'SEND_FORMALIZATION_EMAIL':
+        result = enviarEmailFormalizacao_(data);
+        break;
       default:
         throw criarErro_('ACTION_NOT_ALLOWED', 'Ação não permitida.');
     }
@@ -518,6 +530,181 @@ function mensagemSegura_(error) {
   return error && allowedCodes[error.code]
     ? String(error.message || 'Não foi possível concluir a solicitação.')
     : 'Não foi possível concluir a solicitação.';
+}
+
+/**
+ * Formalização de Testes - persistência e e-mail
+ */
+var FORMALIZATION_SHEET = 'FORMALIZACOES';
+var FORMALIZATION_FOLDER = 'SistemaTS_Formalizacao';
+
+function obterPastaFormalizacao_() {
+  var folders = DriveApp.getFoldersByName(FORMALIZATION_FOLDER);
+  return folders.hasNext() ? folders.next() : DriveApp.createFolder(FORMALIZATION_FOLDER);
+}
+
+function obterAbaFormalizacoes_() {
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = spreadsheet.getSheetByName(FORMALIZATION_SHEET);
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(FORMALIZATION_SHEET);
+    sheet.appendRow(['ID', 'Número', 'Título', 'Situação', 'Revisão', 'Atualizado em', 'JSON']);
+    sheet.getRange(1, 1, 1, 7)
+      .setFontWeight('bold')
+      .setBackground('#10261C')
+      .setFontColor('#86CB38');
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function salvarFormalizacao_(data) {
+  validarAplicacao_(data);
+  if (!data.formalization || typeof data.formalization !== 'object') {
+    throw criarErro_('INVALID_FORMALIZATION', 'Formalização inválida.');
+  }
+  var formalization = data.formalization;
+  validarTextoObrigatorio_(formalization.id, 'Identificador da formalização', 120);
+  validarTextoObrigatorio_(formalization.number, 'Número da formalização', 80);
+
+  var sheet = obterAbaFormalizacoes_();
+  var values = sheet.getDataRange().getValues();
+  var rowIndex = -1;
+  for (var i = 1; i < values.length; i++) {
+    if (String(values[i][0]) === String(formalization.id)) {
+      rowIndex = i + 1;
+      break;
+    }
+  }
+
+  var payload = JSON.stringify(formalization);
+  var row = [
+    formalization.id,
+    formalization.number,
+    limitarTexto_(formalization.title, 300),
+    limitarTexto_(formalization.status, 40),
+    limitarTexto_(formalization.revision, 20),
+    new Date().toISOString(),
+    payload
+  ];
+
+  if (rowIndex > 0) {
+    sheet.getRange(rowIndex, 1, 1, row.length).setValues([row]);
+  } else {
+    sheet.appendRow(row);
+  }
+
+  return { formalizationId: formalization.id, savedAt: new Date().toISOString() };
+}
+
+function listarFormalizacoes_(data) {
+  validarAplicacao_(data);
+  var sheet = obterAbaFormalizacoes_();
+  var values = sheet.getDataRange().getValues();
+  var items = [];
+  for (var i = 1; i < values.length; i++) {
+    var json = values[i][6];
+    var record = null;
+    try { record = JSON.parse(String(json || '{}')); } catch (_) { record = null; }
+    if (!record) continue;
+    items.push({
+      id: values[i][0],
+      number: values[i][1],
+      title: values[i][2],
+      status: values[i][3],
+      revision: values[i][4],
+      updatedAt: values[i][5],
+      products: (record.products || []).map(function(product) { return product.name; })
+    });
+  }
+  return { items: items };
+}
+
+function obterFormalizacao_(data) {
+  validarAplicacao_(data);
+  validarTextoObrigatorio_(data.id, 'Identificador da formalização', 120);
+  var sheet = obterAbaFormalizacoes_();
+  var values = sheet.getDataRange().getValues();
+  for (var i = 1; i < values.length; i++) {
+    if (String(values[i][0]) === String(data.id)) {
+      var record = null;
+      try { record = JSON.parse(String(values[i][6] || '{}')); } catch (_) { record = null; }
+      return { formalization: record };
+    }
+  }
+  throw criarErro_('NOT_FOUND', 'Formalização não encontrada.');
+}
+
+function enviarEmailFormalizacao_(data) {
+  validarAplicacao_(data);
+  validarTextoObrigatorio_(data.formalizationId, 'Identificador da formalização', 120);
+  validarTextoObrigatorio_(data.communicationId, 'Identificador da comunicação', 120);
+  validarTextoObrigatorio_(data.idempotencyKey, 'Chave de idempotência', 200);
+  validarTextoObrigatorio_(data.recipients && data.recipients.to, 'Destinatário', 200);
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    var properties = PropertiesService.getScriptProperties();
+    var operationKey = 'FORMALIZATION_SEND_' + data.idempotencyKey;
+    var existing = properties.getProperty(operationKey);
+    if (existing) {
+      var parsed = null;
+      try { parsed = JSON.parse(existing); } catch (_) { parsed = null; }
+      if (parsed && parsed.contentHash && parsed.contentHash !== data.contentHash) {
+        throw criarErro_('IDEMPOTENCY_CONFLICT', 'A mesma operação foi solicitada com conteúdo diferente.');
+      }
+      return {
+        communicationId: data.communicationId,
+        status: parsed && parsed.status ? parsed.status : 'enviado',
+        reused: true
+      };
+    }
+
+    properties.setProperty(operationKey, JSON.stringify({
+      status: 'processamento',
+      contentHash: data.contentHash || '',
+      createdAt: new Date().toISOString()
+    }));
+
+    var attachments = [];
+    if (Array.isArray(data.attachments)) {
+      data.attachments.forEach(function(att, index) {
+        if (att && att.base64) {
+          var bytes = Utilities.base64Decode(att.base64);
+          attachments.push(Utilities.newBlob(bytes, att.type || MimeType.PDF, att.name || ('anexo_' + index + '.pdf')));
+        }
+      });
+    }
+
+    var options = {
+      to: data.recipients.to,
+      subject: limitarTexto_(data.subject, 300),
+      body: limitarTexto_(data.body, 20000),
+      replyTo: data.recipients.reply || undefined,
+      name: 'Sistema-TS - Grupo SRF'
+    };
+    if (data.recipients.cc) options.cc = data.recipients.cc;
+    if (attachments.length) options.attachments = attachments;
+
+    MailApp.sendEmail(options);
+
+    var result = {
+      status: 'enviado',
+      communicationId: data.communicationId,
+      sentAt: new Date().toISOString()
+    };
+    properties.setProperty(operationKey, JSON.stringify({
+      status: 'enviado',
+      contentHash: data.contentHash || '',
+      createdAt: new Date().toISOString()
+    }));
+    return result;
+  } catch (error) {
+    throw error;
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function sanitizarLog_(error) {

@@ -1,0 +1,205 @@
+:root {
+  --ft-bg: #1A1C1E;
+  --ft-text: #F8F9FA;
+  --ft-muted: #94A3B8;
+  --ft-gold: #FFC107;
+  --ft-green: #2ECC71;
+  --ft-red: #E74C3C;
+  --ft-card: rgba(40,44,49,0.7);
+  --ft-border: rgba(255,255,255,0.1);
+  --ft-field: rgba(0,0,0,0.4);
+  --ft-field-border: rgba(255,255,255,0.15);
+}
+
+.view { display: none; }
+.view.active { display: block; }
+
+.app-tabs {
+  display: flex;
+  gap: 8px;
+  width: min(920px, calc(100% - 22px));
+  margin: 12px auto 0;
+}
+.tab-button {
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid var(--ft-border);
+  background: var(--ft-card);
+  color: var(--ft-text);
+  font-size: 16px;
+  cursor: pointer;
+}
+.tab-button.active {
+  background: var(--ft-gold);
+  color: #111;
+  border-color: var(--ft-gold);
+}
+.area-active {
+  margin: 4px 0 0;
+  color: var(--ft-muted);
+  font-size: 12px;
+}
+
+.formalizacao-shell {
+  display: grid;
+  gap: 24px;
+}
+.page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.page-head h1 {
+  margin: 0 0 8px;
+  font-family: 'Montserrat', sans-serif;
+}
+.page-description {
+  margin: 0;
+  color: var(--ft-muted);
+}
+.save-status {
+  margin: 8px 0 0;
+  color: var(--ft-green);
+  font-size: 14px;
+}
+.toolbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr auto;
+  gap: 8px;
+  align-items: end;
+}
+.toolbar .field-label { margin-bottom: 4px; }
+@media (max-width: 1023px) {
+  .toolbar { grid-template-columns: 1fr 1fr; }
+}
+.list-area { display: grid; gap: 12px; }
+.form-area { display: grid; gap: 24px; }
+.stack { display: grid; gap: 16px; }
+.review-box {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--ft-border);
+  border-radius: 12px;
+  background: rgba(0,0,0,0.25);
+}
+.history-list { display: grid; gap: 12px; }
+
+.card {
+  background: var(--ft-card);
+  border: 1px solid var(--ft-border);
+  border-radius: 16px;
+  padding: 24px;
+}
+@media (max-width: 639px) {
+  .card { padding: 16px; }
+}
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 640px) {
+  .grid { grid-template-columns: 1fr 1fr; }
+}
+.span-2 { grid-column: 1 / -1; }
+.field-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--ft-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.input, textarea, select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--ft-field-border);
+  background: var(--ft-field);
+  color: var(--ft-text);
+  font-size: 16px;
+  box-sizing: border-box;
+  min-width: 0;
+}
+textarea { resize: vertical; }
+.required { color: var(--ft-gold); }
+.btn {
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid var(--ft-border);
+  background: rgba(255,255,255,0.08);
+  color: var(--ft-text);
+  font-size: 16px;
+  cursor: pointer;
+}
+.btn-primary {
+  background: var(--ft-gold);
+  color: #111;
+  border-color: var(--ft-gold);
+}
+.btn-red {
+  background: rgba(231,76,60,0.2);
+  border-color: var(--ft-red);
+  color: var(--ft-text);
+}
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.product-card {
+  border: 1px solid var(--ft-border);
+  border-radius: 12px;
+  padding: 16px;
+  background: rgba(0,0,0,0.2);
+  display: grid;
+  gap: 12px;
+}
+.product-file {
+  font-size: 14px;
+  color: var(--ft-muted);
+}
+.pendencia {
+  color: var(--ft-red);
+  font-size: 14px;
+}
+.table-wrap { overflow-x: auto; }
+table.formalizacao-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+table.formalizacao-table th,
+table.formalizacao-table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--ft-border);
+  text-align: left;
+}
+@media (max-width: 1023px) {
+  .table-wrap { display: none; }
+  .card-list { display: grid; gap: 12px; }
+}
+@media (min-width: 1024px) {
+  .card-list { display: none; }
+}
+.card-item {
+  border: 1px solid var(--ft-border);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(0,0,0,0.2);
+  display: grid;
+  gap: 6px;
+}
+.toast.visible { opacity: 1; }
