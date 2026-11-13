@@ -535,6 +535,24 @@ function updateSaveStatus(text) {
   if (element) element.textContent = text;
 }
 
+async function syncFromServer() {
+  try {
+    const result = await postBackendForm({ action: 'FORMALIZATION_LIST' });
+    if (result.status !== 'success' || !Array.isArray(result.items)) return;
+    for (const item of result.items) {
+      if (state.records.some(r => r.id === item.id)) continue;
+      try {
+        const detail = await postBackendForm({ action: 'FORMALIZATION_GET', id: item.id });
+        if (detail.status === 'success' && detail.formalization) {
+          state.records.unshift(detail.formalization);
+          await dbPut(detail.formalization);
+        }
+      } catch (_) {}
+    }
+    renderList();
+  } catch (_) {}
+}
+
 async function syncFormalization(record) {
   try {
     const result = await postBackendForm({ action: 'FORMALIZATION_SAVE', formalization: record });
@@ -957,6 +975,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     state.db = await openDb();
     state.records = await dbAll();
+    await syncFromServer();
   } catch (error) {
     toastForm('Armazenamento local indisponível. Algumas funções serão limitadas.');
     state.records = [];

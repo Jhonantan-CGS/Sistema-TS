@@ -375,7 +375,7 @@ function onOpen() {
 }
 
 function setupHeaders() {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = obterSpreadsheetFormalizacao_();
     let sheet = ss.getSheetByName('Dados PTA');
     if (!sheet) {
         sheet = ss.insertSheet('Dados PTA');
@@ -438,6 +438,17 @@ function checkAIConfig() {
    FORMALIZACAO DE TESTES
    ============================================ */
 
+function obterSpreadsheetFormalizacao_() {
+    const props = PropertiesService.getScriptProperties();
+    const ssId = props.getProperty('FORMALIZATION_SS_ID');
+    if (ssId) {
+        try { return SpreadsheetApp.openById(ssId); } catch (e) { /* criar nova */ }
+    }
+    const ss = SpreadsheetApp.create('Sistema-TS Formalizacoes');
+    props.setProperty('FORMALIZATION_SS_ID', ss.getId());
+    return ss;
+}
+
 function handleFormalizationSave(body) {
     const lock = LockService.getScriptLock();
     try {
@@ -455,7 +466,7 @@ function handleFormalizationSave(body) {
             return jsonResponse({ status: 'error', message: 'Identificador e n�mero obrigat�rios.' }, 400);
         }
 
-        const ss = SpreadsheetApp.getActiveSpreadsheet();
+        const ss = obterSpreadsheetFormalizacao_();
         const sheet = ss.getSheetByName('Dados Formalizacao') || ss.insertSheet('Dados Formalizacao');
         if (sheet.getLastRow() === 0) {
             sheet.appendRow(['ID', 'N�mero', 'T�tulo', 'Situa��o', 'Revis�o', 'Atualizado em', 'JSON']);
@@ -502,7 +513,7 @@ function handleFormalizationSave(body) {
 
 function handleFormalizationList(body) {
     try {
-        const ss = SpreadsheetApp.getActiveSpreadsheet();
+        const ss = obterSpreadsheetFormalizacao_();
         const sheet = ss.getSheetByName('Dados Formalizacao');
         if (!sheet) {
             return jsonResponse({ status: 'success', items: [] });
@@ -535,7 +546,7 @@ function handleFormalizationGet(body) {
         if (!body.id) {
             return jsonResponse({ status: 'error', message: 'Identificador obrigat�rio.' }, 400);
         }
-        const ss = SpreadsheetApp.getActiveSpreadsheet();
+        const ss = obterSpreadsheetFormalizacao_();
         const sheet = ss.getSheetByName('Dados Formalizacao');
         if (!sheet) {
             return jsonResponse({ status: 'error', message: 'Formaliza��o n�o encontrada.' }, 404);
