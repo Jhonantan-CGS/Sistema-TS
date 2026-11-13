@@ -438,8 +438,8 @@ function checkAIConfig() {
    FORMALIZACAO DE TESTES
    ============================================ */
 
+
 function obterSpreadsheetFormalizacao_() {
-    const props = PropertiesService.getScriptProperties();
     const ssId = props.getProperty('FORMALIZATION_SS_ID');
     if (ssId) {
         try { return SpreadsheetApp.openById(ssId); } catch (e) { /* criar nova */ }
@@ -646,3 +646,4 @@ function handleSendFormalizationEmail(body) {
         lock.releaseLock();
     }
 }
+
