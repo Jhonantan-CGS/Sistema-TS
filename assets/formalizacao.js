@@ -1,7 +1,7 @@
 'use strict';
 
 const FORMALIZATION_VERSION = '1.0';
-const FORMALIZATION_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwP5apnJVBzo5WuTlggi4mtythC7j2aO-VoEi3RWxitqSnWgECuC3-0_aKlSpcFsFfX/exec';
+const FORMALIZATION_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFvLj8wq2gY0enpCiKPWewVpcj_LVWrt9w06Rz2wA582ZY0_GUWxr-gHDUMIQynbmv/exec';
 
 const state = {
   db: null,
