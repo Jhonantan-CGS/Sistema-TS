@@ -11,9 +11,9 @@
    - Logs sanitizados
    ============================================ */
 
-const APP_VERSION = '1.9';
+const APP_VERSION = '2.0';
 const APP_NAME = 'PTA NR-35 GRUPO SRF';
-const ALLOWED_ACTIONS = ['SAVE_PDF', 'AI_NR35_RISKS', 'AI_NR35_RESCUE', 'FORMALIZATION_SAVE', 'FORMALIZATION_LIST', 'FORMALIZATION_GET', 'SEND_FORMALIZATION_EMAIL'];
+const ALLOWED_ACTIONS = ['SAVE_PDF', 'AI_NR35_RISKS', 'AI_NR35_RESCUE', 'FORMALIZATION_SAVE', 'FORMALIZATION_LIST', 'FORMALIZATION_GET', 'FORMALIZATION_UPLOAD_DOC', 'FORMALIZATION_DOC_GET', 'FORMALIZATION_SEND', 'FORMALIZATION_SEND_STATUS', 'FORMALIZATION_RESPONSE'];
 const MAX_FIELD_LENGTH = 5000;
 const MAX_RATE_CLIENT = 30;
 const MAX_RATE_GLOBAL = 200;
@@ -30,7 +30,8 @@ function doGet(e) {
         status: 'success',
         service: APP_NAME,
         version: APP_VERSION,
-        aiConfigured: !!(aiKey && aiKey.length > 10)
+        aiConfigured: !!(aiKey && aiKey.length > 10),
+        authConfigured: !!(props.getProperty('FORMALIZATION_ACCESS_KEY') && props.getProperty('FORMALIZATION_ACCESS_KEY').length >= 8)
     })).setMimeType(ContentService.MimeType.JSON);
 }
 
@@ -52,19 +53,27 @@ function doPost(e) {
 
         switch (action) {
             case 'SAVE_PDF':
-                return handleSavePdf(body);
+                return requireAccessKey_(body, function() { return handleSavePdf(body); });
             case 'AI_NR35_RISKS':
-                return handleAiRisks(body);
+                return requireAccessKey_(body, function() { return handleAiRisks(body); });
             case 'AI_NR35_RESCUE':
-                return handleAiRescue(body);
+                return requireAccessKey_(body, function() { return handleAiRescue(body); });
             case 'FORMALIZATION_SAVE':
-                return handleFormalizationSave(body);
+                return requireAccessKey_(body, function() { return handleFormalizationSave(body); });
             case 'FORMALIZATION_LIST':
-                return handleFormalizationList(body);
+                return requireAccessKey_(body, function() { return handleFormalizationList(body); });
             case 'FORMALIZATION_GET':
-                return handleFormalizationGet(body);
-            case 'SEND_FORMALIZATION_EMAIL':
-                return handleSendFormalizationEmail(body);
+                return requireAccessKey_(body, function() { return handleFormalizationGet(body); });
+            case 'FORMALIZATION_UPLOAD_DOC':
+                return requireAccessKey_(body, function() { return handleFormalizationUploadDoc(body); });
+            case 'FORMALIZATION_DOC_GET':
+                return requireAccessKey_(body, function() { return handleFormalizationDocGet(body); });
+            case 'FORMALIZATION_SEND':
+                return requireAccessKey_(body, function() { return handleFormalizationSend(body); });
+            case 'FORMALIZATION_SEND_STATUS':
+                return requireAccessKey_(body, function() { return handleFormalizationSendStatus(body); });
+            case 'FORMALIZATION_RESPONSE':
+                return requireAccessKey_(body, function() { return handleFormalizationResponse(body); });
             default:
                 return jsonResponse({ status: 'error', message: 'Ação não implementada.' }, 400);
         }
@@ -363,6 +372,57 @@ function getOrCreateFolder_(folderName) {
 }
 
 /* ============================================
+   Autorização por chave de acesso (servidor)
+   A chave vive somente em Script Properties e é
+   validada a cada requisição protegida. Ela não é
+   um segredo de frontend: não está no código-fonte.
+   ============================================ */
+
+function requireAccessKey_(body, handler) {
+    const props = PropertiesService.getScriptProperties();
+    const expected = props.getProperty('FORMALIZATION_ACCESS_KEY');
+    if (!expected || expected.length < 8) {
+        return jsonResponse({
+            status: 'error',
+            code: 'authorization_not_configured',
+            message: 'Acesso não configurado no servidor. O administrador deve definir FORMALIZATION_ACCESS_KEY nas Propriedades do Script (mínimo 8 caracteres).'
+        }, 503);
+    }
+    const provided = body && body.accessKey ? String(body.accessKey) : '';
+    if (!provided || !constantTimeEquals_(provided, expected)) {
+        return jsonResponse({
+            status: 'error',
+            code: 'authorization_required',
+            message: 'Chave de acesso ausente ou inválida. Informe a chave configurada no servidor.'
+        }, 401);
+    }
+    return handler();
+}
+
+function constantTimeEquals_(a, b) {
+    const x = String(a);
+    const y = String(b);
+    if (x.length !== y.length) return false;
+    let diff = 0;
+    for (let i = 0; i < x.length; i++) {
+        diff |= x.charCodeAt(i) ^ y.charCodeAt(i);
+    }
+    return diff === 0;
+}
+
+function sha256Hex_(bytes) {
+    const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, bytes);
+    return digest.map(function (b) {
+        const value = (b < 0 ? b + 256 : b).toString(16);
+        return value.length === 1 ? '0' + value : value;
+    }).join('');
+}
+
+function bytesToBase64_(bytes) {
+    return Utilities.base64Encode(bytes);
+}
+
+/* ============================================
    Menu da Planilha
    ============================================ */
 
@@ -433,217 +493,3 @@ function checkAIConfig() {
         (configured ? 'A chave está segura nas Propriedades do Script.' : 'Configure a propriedade GROQ_API_KEY nas Propriedades do Script.')
     );
 }
-
-/* ============================================
-   FORMALIZACAO DE TESTES
-   ============================================ */
-
-
-function obterSpreadsheetFormalizacao_() {
-    const ssId = props.getProperty('FORMALIZATION_SS_ID');
-    if (ssId) {
-        try { return SpreadsheetApp.openById(ssId); } catch (e) { /* criar nova */ }
-    }
-    const ss = SpreadsheetApp.create('Sistema-TS Formalizacoes');
-    props.setProperty('FORMALIZATION_SS_ID', ss.getId());
-    return ss;
-}
-
-function handleFormalizationSave(body) {
-    const lock = LockService.getScriptLock();
-    try {
-        lock.waitLock(30000);
-    } catch (e) {
-        return jsonResponse({ status: 'error', message: 'Sistema ocupado. Tente novamente.' }, 503);
-    }
-
-    try {
-        if (!body.formalization || typeof body.formalization !== 'object') {
-            return jsonResponse({ status: 'error', message: 'Formaliza��o inv�lida.' }, 400);
-        }
-        const formalization = body.formalization;
-        if (!formalization.id || !formalization.number) {
-            return jsonResponse({ status: 'error', message: 'Identificador e n�mero obrigat�rios.' }, 400);
-        }
-
-        const ss = obterSpreadsheetFormalizacao_();
-        const sheet = ss.getSheetByName('Dados Formalizacao') || ss.insertSheet('Dados Formalizacao');
-        if (sheet.getLastRow() === 0) {
-            sheet.appendRow(['ID', 'N�mero', 'T�tulo', 'Situa��o', 'Revis�o', 'Atualizado em', 'JSON']);
-        }
-
-        const values = sheet.getDataRange().getValues();
-        let rowIndex = -1;
-        for (let i = 1; i < values.length; i++) {
-            if (String(values[i][0]) === String(formalization.id)) {
-                rowIndex = i + 1;
-                break;
-            }
-        }
-
-        const row = [
-            formalization.id,
-            formalization.number,
-            sanitizeField(formalization.title),
-            sanitizeField(formalization.status),
-            sanitizeField(formalization.revision),
-            new Date().toISOString(),
-            JSON.stringify(formalization)
-        ];
-
-        if (rowIndex > 0) {
-            sheet.getRange(rowIndex, 1, 1, row.length).setValues([row]);
-        } else {
-            sheet.appendRow(row);
-        }
-
-        return jsonResponse({
-            status: 'success',
-            message: 'Formaliza��o salva.',
-            formalizationId: formalization.id,
-            savedAt: new Date().toISOString()
-        });
-    } catch (err) {
-        Logger.log('Erro FORMALIZATION_SAVE: ' + sanitizeLog(err.message));
-        return jsonResponse({ status: 'error', message: 'Erro ao salvar formaliza��o: ' + sanitizeLog(err.message) }, 500);
-    } finally {
-        lock.releaseLock();
-    }
-}
-
-function handleFormalizationList(body) {
-    try {
-        const ss = obterSpreadsheetFormalizacao_();
-        const sheet = ss.getSheetByName('Dados Formalizacao');
-        if (!sheet) {
-            return jsonResponse({ status: 'success', items: [] });
-        }
-        const values = sheet.getDataRange().getValues();
-        const items = [];
-        for (let i = 1; i < values.length; i++) {
-            let record = null;
-            try { record = JSON.parse(String(values[i][6] || '{}')); } catch (e) { record = null; }
-            if (!record) continue;
-            items.push({
-                id: values[i][0],
-                number: values[i][1],
-                title: values[i][2],
-                status: values[i][3],
-                revision: values[i][4],
-                updatedAt: values[i][5],
-                products: (record.products || []).map(function (p) { return p.name; })
-            });
-        }
-        return jsonResponse({ status: 'success', items: items });
-    } catch (err) {
-        Logger.log('Erro FORMALIZATION_LIST: ' + sanitizeLog(err.message));
-        return jsonResponse({ status: 'error', message: 'Erro ao listar formaliza��es.' }, 500);
-    }
-}
-
-function handleFormalizationGet(body) {
-    try {
-        if (!body.id) {
-            return jsonResponse({ status: 'error', message: 'Identificador obrigat�rio.' }, 400);
-        }
-        const ss = obterSpreadsheetFormalizacao_();
-        const sheet = ss.getSheetByName('Dados Formalizacao');
-        if (!sheet) {
-            return jsonResponse({ status: 'error', message: 'Formaliza��o n�o encontrada.' }, 404);
-        }
-        const values = sheet.getDataRange().getValues();
-        for (let i = 1; i < values.length; i++) {
-            if (String(values[i][0]) === String(body.id)) {
-                let record = null;
-                try { record = JSON.parse(String(values[i][6] || '{}')); } catch (e) { record = null; }
-                return jsonResponse({ status: 'success', formalization: record });
-            }
-        }
-        return jsonResponse({ status: 'error', message: 'Formaliza��o n�o encontrada.' }, 404);
-    } catch (err) {
-        Logger.log('Erro FORMALIZATION_GET: ' + sanitizeLog(err.message));
-        return jsonResponse({ status: 'error', message: 'Erro ao obter formaliza��o.' }, 500);
-    }
-}
-
-function handleSendFormalizationEmail(body) {
-    const lock = LockService.getScriptLock();
-    try {
-        lock.waitLock(30000);
-    } catch (e) {
-        return jsonResponse({ status: 'error', message: 'Sistema ocupado. Tente novamente.' }, 503);
-    }
-
-    try {
-        if (!body.recipients || !body.recipients.to) {
-            return jsonResponse({ status: 'error', message: 'Destinat�rio obrigat�rio.' }, 400);
-        }
-        if (!body.idempotencyKey) {
-            return jsonResponse({ status: 'error', message: 'Chave de idempot�ncia obrigat�ria.' }, 400);
-        }
-
-        const props = PropertiesService.getScriptProperties();
-        const operationKey = 'FORMALIZATION_SEND_' + body.idempotencyKey;
-        const existing = props.getProperty(operationKey);
-        if (existing) {
-            let parsed = null;
-            try { parsed = JSON.parse(existing); } catch (e) { parsed = null; }
-            if (parsed && parsed.contentHash && body.contentHash && parsed.contentHash !== body.contentHash) {
-                return jsonResponse({ status: 'error', message: 'Conflito de idempot�ncia: conte�do diferente.' }, 409);
-            }
-            return jsonResponse({
-                status: 'success',
-                reused: true,
-                communicationId: body.communicationId,
-                message: 'Envio j� registrado.'
-            });
-        }
-
-        props.setProperty(operationKey, JSON.stringify({
-            status: 'processamento',
-            contentHash: body.contentHash || '',
-            createdAt: new Date().toISOString()
-        }));
-
-        const attachments = [];
-        if (Array.isArray(body.attachments)) {
-            body.attachments.forEach(function (att, index) {
-                if (att && att.base64) {
-                    const bytes = Utilities.base64Decode(att.base64);
-                    attachments.push(Utilities.newBlob(bytes, att.type || MimeType.PDF, att.name || ('anexo_' + index + '.pdf')));
-                }
-            });
-        }
-
-        const options = {
-            to: body.recipients.to,
-            subject: sanitizeField(body.subject),
-            body: sanitizeField(body.body),
-            name: 'Sistema-TS - Grupo SRF'
-        };
-        if (body.recipients.cc) options.cc = body.recipients.cc;
-        if (body.recipients.reply) options.replyTo = body.recipients.reply;
-        if (attachments.length) options.attachments = attachments;
-
-        MailApp.sendEmail(options);
-
-        props.setProperty(operationKey, JSON.stringify({
-            status: 'enviado',
-            contentHash: body.contentHash || '',
-            createdAt: new Date().toISOString()
-        }));
-
-        return jsonResponse({
-            status: 'success',
-            message: 'E-mail enviado.',
-            communicationId: body.communicationId,
-            sentAt: new Date().toISOString()
-        });
-    } catch (err) {
-        Logger.log('Erro SEND_FORMALIZATION_EMAIL: ' + sanitizeLog(err.message));
-        return jsonResponse({ status: 'error', message: 'Erro ao enviar e-mail: ' + sanitizeLog(err.message) }, 500);
-    } finally {
-        lock.releaseLock();
-    }
-}
-

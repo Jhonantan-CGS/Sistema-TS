@@ -1,15 +1,25 @@
-const CACHE_NAME = 'sistema-ts-v1.8';
+/* Sistema-TS — Service Worker v2.0
+   Nunca limpa IndexedDB nem dados locais do usuário.
+   Apenas caches próprios (sistema-ts-*) são removidos ao ativar. */
+const CACHE_NAME = 'sistema-ts-v2.0';
 const CORE_ASSETS = [
   './',
   './index.html',
-  './manifest.webmanifest',
   './offline.html',
-  './assets/styles-v1.8.css?v=1.8',
-  './assets/app-shell.css?v=1.0',
-  './assets/formalizacao.css?v=1.0',
-  './assets/app-v1.8.js?v=1.8',
-  './assets/formalizacao.js?v=1.5',
-  './assets/srf-logo.svg?v=1.8'
+  './manifest.webmanifest',
+  './assets/app-shell.css?v=2.0',
+  './assets/styles-v1.8.css?v=2.0',
+  './assets/formalizacao.css?v=2.0',
+  './assets/app-core.js?v=2.0',
+  './assets/app-v1.8.js?v=2.0',
+  './assets/formalizacao.js?v=2.0',
+  './assets/srf-logo.svg?v=2.0',
+  './assets/fonts/inter-latin-400-normal.woff2',
+  './assets/fonts/inter-latin-500-normal.woff2',
+  './assets/fonts/inter-latin-600-normal.woff2',
+  './assets/fonts/inter-latin-700-normal.woff2',
+  './assets/vendor/jspdf.umd.min.js',
+  './assets/vendor/jspdf.plugin.autotable.min.js'
 ];
 
 self.addEventListener('install', event => {

@@ -3,213 +3,226 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#10261c">
+  <meta name="theme-color" content="#111715">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>PTA NR-35 | Grupo SRF | V1.8</title>
-  <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="icon" type="image/svg+xml" href="assets/srf-logo.svg?v=1.8">
-  <link rel="stylesheet" href="assets/styles-v1.8.css?v=1.8">
-  <link rel="stylesheet" href="assets/app-shell.css?v=1.0">
-  <link rel="stylesheet" href="assets/formalizacao.css?v=1.0">
+  <title>Sistema-TS | Grupo SRF — PTA NR-35 e Formalização de Testes</title>
+  <link rel="manifest" href="./manifest.webmanifest?v=2.0">
+  <link rel="icon" type="image/svg+xml" href="assets/srf-logo.svg?v=2.0">
+  <link rel="stylesheet" href="assets/app-shell.css?v=2.0">
+  <link rel="stylesheet" href="assets/styles-v1.8.css?v=2.0">
+  <link rel="stylesheet" href="assets/formalizacao.css?v=2.0">
 </head>
 <body>
   <header class="app-header">
     <div class="header-inner">
       <div class="brand-logo-frame">
-        <img class="brand-logo" src="assets/srf-logo.svg?v=1.8" alt="Logo Grupo SRF">
+        <img class="brand-logo" src="assets/srf-logo.svg?v=2.0" alt="Logo Grupo SRF" width="44" height="52">
       </div>
       <div>
         <h1 class="brand-title">GRUPO SRF</h1>
-        <p class="brand-subtitle">SEGURANÇA 4.0 · PTA NR-35 · V 1.8</p>
-        <p class="area-active" id="areaActive">Área ativa: PTA NR-35</p>
+        <p class="brand-subtitle">Segurança do Trabalho</p>
       </div>
     </div>
   </header>
 
-  <nav class="app-tabs" aria-label="Áreas do sistema">
-    <button type="button" class="tab-button active" data-view="pta" id="tabPta">PTA NR-35</button>
-    <button type="button" class="tab-button" data-view="formalizacao" id="tabFormalizacao">Formalização de Testes</button>
+  <nav class="app-tabs" role="tablist" aria-label="Áreas do sistema">
+    <button type="button" class="tab-button active" data-view="pta" id="tabPta" role="tab" aria-selected="true" aria-controls="viewPta">PTA NR-35</button>
+    <button type="button" class="tab-button" data-view="formalizacao" id="tabFormalizacao" role="tab" aria-selected="false" aria-controls="viewFormalizacao">Formalização de Testes</button>
   </nav>
 
-  <section id="viewPta" class="view active">
-    <main class="container">
-      <form id="ptaForm">
-      <section class="card">
-        <h2 class="section-title">1. Identificação</h2>
-        <div class="grid">
-          <div>
-            <label class="field-label">Data/Hora Emissão <span class="required">*</span></label>
-            <div class="grid">
-              <input class="input" type="date" id="f_emissao_data" required>
-              <input class="input" type="time" id="f_emissao_hora" required>
-            </div>
-          </div>
-          <div>
-            <label class="field-label">Data/Hora Término <span class="required">*</span></label>
-            <div class="grid">
-              <input class="input" type="date" id="f_termino_data" required>
-              <input class="input" type="time" id="f_termino_hora" required>
-            </div>
-          </div>
-          <div class="span-2">
-            <label class="field-label">Mão de Obra <span class="required">*</span></label>
-            <div class="radio-row">
-              <label class="option"><input type="radio" name="f_mao_obra" value="Interna" required> Interna</label>
-              <label class="option"><input type="radio" name="f_mao_obra" value="Externa"> Externa</label>
-              <label class="option"><input type="radio" name="f_mao_obra" value="Interna e Externa"> Interna e Externa</label>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="section-head">
-          <h2 class="section-title">2. Profissionais Autorizados</h2>
-          <button class="btn" type="button" id="btnAddWorker">+ Adicionar trabalhador</button>
-        </div>
-        <div id="workers"></div>
-      </section>
-
-      <section class="card">
-        <h2 class="section-title">3. Local e Tarefa</h2>
-        <div class="grid">
-          <div>
-            <label class="field-label">Local específico <span class="required">*</span></label>
-            <input class="input" type="text" id="f_ativ_local" required placeholder="Onde ocorrerá a tarefa?">
-          </div>
-          <div>
-            <label class="field-label">Altura aproximada (m) <span class="required">*</span></label>
-            <input class="input" type="number" min="0" step="0.1" id="f_ativ_altura" required placeholder="Ex.: 10">
-          </div>
-          <div class="span-2">
-            <label class="field-label">Descrição detalhada <span class="required">*</span></label>
-            <textarea id="f_ativ_desc" required placeholder="Descreva objetivamente a atividade"></textarea>
-          </div>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="section-head">
-          <h2 class="section-title">4. Clima</h2>
-          <button class="btn btn-blue" type="button" id="btnWeather">Consultar GPS</button>
-        </div>
-        <div id="chk_clima" class="check-grid">
-          <label class="option"><input type="checkbox" value="Céu Limpo/Sol"> Céu Limpo/Sol</label>
-          <label class="option"><input type="checkbox" value="Nublado"> Nublado</label>
-          <label class="option"><input type="checkbox" value="Chuva Leve/Garoa"> Chuva Leve/Garoa</label>
-          <label class="option"><input type="checkbox" value="Chuva Forte"> Chuva Forte</label>
-          <label class="option"><input type="checkbox" value="Vento Forte"> Vento Forte</label>
-          <label class="option"><input type="checkbox" value="Vento Leve"> Vento Leve</label>
-        </div>
-        <input class="input top-gap" type="text" id="f_clima_outro" placeholder="Condição complementar / resultado do GPS">
-      </section>
-
-      <section class="card">
-        <h2 class="section-title">5. Proteção (EPI/EPC)</h2>
-        <div class="grid">
-          <div>
-            <label class="field-label">EPIs verificados <span class="required">*</span></label>
-            <div id="chk_epis" class="check-grid">
-              <label class="option"><input type="checkbox" value="Cinto Paraquedista"> Cinto Paraquedista</label>
-              <label class="option"><input type="checkbox" value="Talabarte Duplo"> Talabarte Duplo</label>
-              <label class="option"><input type="checkbox" value="Trava Quedas"> Trava Quedas</label>
-              <label class="option"><input type="checkbox" value="Capacete com Jugular"> Capacete com Jugular</label>
-              <label class="option"><input type="checkbox" value="Luvas de Segurança"> Luvas</label>
-              <label class="option"><input type="checkbox" value="Óculos de Segurança"> Óculos</label>
-              <label class="option"><input type="checkbox" value="Botina de Segurança"> Botina</label>
-            </div>
-            <input class="input top-gap" id="f_epi_outro" placeholder="Outro EPI">
-          </div>
-          <div>
-            <label class="field-label">EPCs instalados <span class="required">*</span></label>
-            <div id="chk_epcs" class="check-grid">
-              <label class="option"><input type="checkbox" value="Linha de Vida Fixa"> Linha de Vida Fixa</label>
-              <label class="option"><input type="checkbox" value="Linha de Vida Provisória"> Linha Provisória</label>
-              <label class="option"><input type="checkbox" value="Corda 12 mm"> Corda 12 mm</label>
-              <label class="option"><input type="checkbox" value="Cinta de Ancoragem"> Cinta de Ancoragem</label>
-              <label class="option"><input type="checkbox" value="Cones e Fitas"> Cones e Fitas</label>
-              <label class="option"><input type="checkbox" value="Escada Certificada"> Escada Certificada</label>
-              <label class="option"><input type="checkbox" value="Guarda-corpo"> Guarda-corpo</label>
-              <label class="option"><input type="checkbox" value="Andaime / Plataforma"> Andaime / Plataforma</label>
-            </div>
-            <input class="input top-gap" id="f_epc_outro" placeholder="Outro EPC">
-          </div>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2 class="section-title">6. Auditoria NR-35</h2>
-        <div id="checklist" class="checklist"></div>
-        <div class="assist-box top-section-gap">
-          <div class="assist-head">
-            <label class="field-label no-margin">Riscos e medidas <span class="required">*</span></label>
-            <button class="btn btn-purple" type="button" id="btnRiskAssistant">Gerar com IA protegida</button>
-          </div>
-          <textarea id="f_riscos_medidas" required placeholder="A IA preencherá os riscos e as medidas; se estiver indisponível, o sistema usará o assistente local"></textarea>
-          <p class="assist-note">A chave Groq permanece somente no Google Apps Script. Em falhas externas, o gerador local assume automaticamente.</p>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2 class="section-title">7. Resgate e Liberação</h2>
-        <div class="assist-box blue">
-          <div class="assist-head">
-            <label class="field-label no-margin">Plano de resgate rápido <span class="required">*</span></label>
-            <button class="btn btn-blue" type="button" id="btnRescueAssistant">Gerar com IA protegida</button>
-          </div>
-          <textarea id="f_observacoes" required placeholder="A IA preencherá o plano; se estiver indisponível, o sistema usará o plano local"></textarea>
-          <p class="assist-note">O conteúdo gerado é apoio técnico e deve ser validado pelo responsável de SST antes da liberação.</p>
-        </div>
-
-        <div class="sign-grid top-section-gap">
-          <div class="sign-card">
-            <label class="field-label">Emissor</label>
-            <input class="input" id="f_nome_emissor" required placeholder="Nome do responsável pela emissão">
-            <img id="img_sign_emissor" class="signature-preview" alt="Assinatura do emissor">
-            <button class="btn full-width top-gap" type="button" data-sign="emissor">Assinar emissor</button>
-          </div>
-          <div class="sign-card">
-            <label class="field-label">Supervisor</label>
-            <input class="input" id="f_nome_sup" required placeholder="Nome do supervisor da área">
-            <img id="img_sign_sup" class="signature-preview" alt="Assinatura do supervisor">
-            <button class="btn full-width top-gap" type="button" data-sign="sup">Assinar supervisor</button>
-          </div>
-        </div>
-      </section>
-
-      <div class="actions">
-        <button class="btn" type="button" id="btnDownload">Gerar PDF local</button>
-        <button class="btn btn-gold" type="button" id="btnDrive">Salvar PDF na nuvem</button>
+  <section id="viewPta" class="app-shell view active" role="tabpanel" aria-labelledby="tabPta">
+    <div class="page-heading">
+      <div>
+        <h1>PTA NR-35</h1>
+        <p class="page-description">Permissão de Trabalho em Altura — preencha os campos, assine e gere o PDF ou salve na nuvem.</p>
       </div>
-
-      <footer class="footer">
-        <div>Desenvolvido por <strong>Jhonantan Cardoso Gonçalves</strong></div>
-        <div><a href="https://wa.me/5548992159791" target="_blank" rel="noopener">WhatsApp: (48) 99215-9791</a></div>
-        <div>V 1.8 © 2026 · Jaguaruna/SC</div>
-      </footer>
-    </form>
-  </main>
-  </section>
-
-  <section id="viewFormalizacao" class="view" aria-labelledby="formalizacaoTitle">
-    <main class="container">
-      <div class="formalizacao-shell">
-        <div class="page-head">
-          <div>
-            <h1 id="formalizacaoTitle">Formalização de Testes</h1>
-            <p class="page-description">Reúna FDS, descreva o procedimento, revise e envie por e-mail, registre a resposta e consulte o histórico.</p>
-            <p class="save-status" id="saveStatus">Salvo neste dispositivo</p>
+    </div>
+    <main>
+      <form id="ptaForm" novalidate>
+        <section class="card" aria-labelledby="pta-sec-1">
+          <h2 class="section-title" id="pta-sec-1">1. Identificação</h2>
+          <div class="grid">
+            <div>
+              <label class="field-label" for="f_emissao_data">Data/Hora Emissão <span class="required">*</span></label>
+              <div class="grid">
+                <input class="input" type="date" id="f_emissao_data" required>
+                <input class="input" type="time" id="f_emissao_hora" required aria-label="Hora de emissão">
+              </div>
+            </div>
+            <div>
+              <label class="field-label" for="f_termino_data">Data/Hora Término <span class="required">*</span></label>
+              <div class="grid">
+                <input class="input" type="date" id="f_termino_data" required>
+                <input class="input" type="time" id="f_termino_hora" required aria-label="Hora de término">
+              </div>
+            </div>
+            <div class="span-2">
+              <span class="field-label" id="mao-obra-label">Mão de Obra <span class="required">*</span></span>
+              <div class="radio-row" role="radiogroup" aria-labelledby="mao-obra-label">
+                <label class="option"><input type="radio" name="f_mao_obra" value="Interna" required> Interna</label>
+                <label class="option"><input type="radio" name="f_mao_obra" value="Externa"> Externa</label>
+                <label class="option"><input type="radio" name="f_mao_obra" value="Interna e Externa"> Interna e Externa</label>
+              </div>
+            </div>
           </div>
+        </section>
+
+        <section class="card" aria-labelledby="pta-sec-2">
+          <div class="section-head">
+            <h2 class="section-title" id="pta-sec-2">2. Profissionais Autorizados</h2>
+            <button class="btn" type="button" id="btnAddWorker">+ Adicionar trabalhador</button>
+          </div>
+          <div id="workers" aria-live="polite"></div>
+        </section>
+
+        <section class="card" aria-labelledby="pta-sec-3">
+          <h2 class="section-title" id="pta-sec-3">3. Local e Tarefa</h2>
+          <div class="grid">
+            <div>
+              <label class="field-label" for="f_ativ_local">Local específico <span class="required">*</span></label>
+              <input class="input" type="text" id="f_ativ_local" required placeholder="Onde ocorrerá a tarefa?">
+            </div>
+            <div>
+              <label class="field-label" for="f_ativ_altura">Altura aproximada (m) <span class="required">*</span></label>
+              <input class="input" type="number" min="0" step="0.1" id="f_ativ_altura" required placeholder="Ex.: 10">
+            </div>
+            <div class="span-2">
+              <label class="field-label" for="f_ativ_desc">Descrição detalhada <span class="required">*</span></label>
+              <textarea id="f_ativ_desc" required placeholder="Descreva objetivamente a atividade"></textarea>
+            </div>
+          </div>
+        </section>
+
+        <section class="card" aria-labelledby="pta-sec-4">
+          <div class="section-head">
+            <h2 class="section-title" id="pta-sec-4">4. Clima</h2>
+            <button class="btn btn-secondary" type="button" id="btnWeather">Consultar GPS</button>
+          </div>
+          <div id="chk_clima" class="check-grid">
+            <label class="option"><input type="checkbox" value="Céu Limpo/Sol"> Céu Limpo/Sol</label>
+            <label class="option"><input type="checkbox" value="Nublado"> Nublado</label>
+            <label class="option"><input type="checkbox" value="Chuva Leve/Garoa"> Chuva Leve/Garoa</label>
+            <label class="option"><input type="checkbox" value="Chuva Forte"> Chuva Forte</label>
+            <label class="option"><input type="checkbox" value="Vento Forte"> Vento Forte</label>
+            <label class="option"><input type="checkbox" value="Vento Leve"> Vento Leve</label>
+          </div>
+          <label class="field-label top-gap" for="f_clima_outro">Condição complementar / resultado do GPS</label>
+          <input class="input" type="text" id="f_clima_outro" placeholder="Ex.: Temperatura 24 °C | Vento 9 km/h">
+        </section>
+
+        <section class="card" aria-labelledby="pta-sec-5">
+          <h2 class="section-title" id="pta-sec-5">5. Proteção (EPI/EPC)</h2>
+          <div class="grid">
+            <div>
+              <span class="field-label" id="epis-label">EPIs verificados <span class="required">*</span></span>
+              <div id="chk_epis" class="check-grid" role="group" aria-labelledby="epis-label">
+                <label class="option"><input type="checkbox" value="Cinto Paraquedista"> Cinto Paraquedista</label>
+                <label class="option"><input type="checkbox" value="Talabarte Duplo"> Talabarte Duplo</label>
+                <label class="option"><input type="checkbox" value="Trava Quedas"> Trava Quedas</label>
+                <label class="option"><input type="checkbox" value="Capacete com Jugular"> Capacete com Jugular</label>
+                <label class="option"><input type="checkbox" value="Luvas de Segurança"> Luvas</label>
+                <label class="option"><input type="checkbox" value="Óculos de Segurança"> Óculos</label>
+                <label class="option"><input type="checkbox" value="Botina de Segurança"> Botina</label>
+              </div>
+              <label class="field-label top-gap" for="f_epi_outro">Outro EPI</label>
+              <input class="input" id="f_epi_outro" placeholder="Outro EPI">
+            </div>
+            <div>
+              <span class="field-label" id="epcs-label">EPCs instalados <span class="required">*</span></span>
+              <div id="chk_epcs" class="check-grid" role="group" aria-labelledby="epcs-label">
+                <label class="option"><input type="checkbox" value="Linha de Vida Fixa"> Linha de Vida Fixa</label>
+                <label class="option"><input type="checkbox" value="Linha de Vida Provisória"> Linha Provisória</label>
+                <label class="option"><input type="checkbox" value="Corda 12 mm"> Corda 12 mm</label>
+                <label class="option"><input type="checkbox" value="Cinta de Ancoragem"> Cinta de Ancoragem</label>
+                <label class="option"><input type="checkbox" value="Cones e Fitas"> Cones e Fitas</label>
+                <label class="option"><input type="checkbox" value="Escada Certificada"> Escada Certificada</label>
+                <label class="option"><input type="checkbox" value="Guarda-corpo"> Guarda-corpo</label>
+                <label class="option"><input type="checkbox" value="Andaime / Plataforma"> Andaime / Plataforma</label>
+              </div>
+              <label class="field-label top-gap" for="f_epc_outro">Outro EPC</label>
+              <input class="input" id="f_epc_outro" placeholder="Outro EPC">
+            </div>
+          </div>
+        </section>
+        <section class="card" aria-labelledby="pta-sec-6">
+          <h2 class="section-title" id="pta-sec-6">6. Auditoria NR-35</h2>
+          <div id="checklist" class="checklist"></div>
+          <div class="assist-box top-section-gap">
+            <div class="assist-head">
+              <label class="field-label no-margin" for="f_riscos_medidas">Riscos e medidas <span class="required">*</span></label>
+              <button class="btn btn-secondary" type="button" id="btnRiskAssistant">Gerar com IA protegida</button>
+            </div>
+            <textarea id="f_riscos_medidas" required placeholder="A IA preencherá os riscos e as medidas; se estiver indisponível, o sistema usará o assistente local"></textarea>
+            <p class="assist-note">A chave Groq permanece somente no Google Apps Script. Em falhas externas, o gerador local assume automaticamente.</p>
+          </div>
+        </section>
+
+        <section class="card" aria-labelledby="pta-sec-7">
+          <h2 class="section-title" id="pta-sec-7">7. Resgate e Liberação</h2>
+          <div class="assist-box assist-box-blue">
+            <div class="assist-head">
+              <label class="field-label no-margin" for="f_observacoes">Plano de resgate rápido <span class="required">*</span></label>
+              <button class="btn btn-secondary" type="button" id="btnRescueAssistant">Gerar com IA protegida</button>
+            </div>
+            <textarea id="f_observacoes" required placeholder="A IA preencherá o plano; se estiver indisponível, o sistema usará o plano local"></textarea>
+            <p class="assist-note">O conteúdo gerado é apoio técnico e deve ser validado pelo responsável de SST antes da liberação.</p>
+          </div>
+
+          <div class="sign-grid top-section-gap">
+            <div class="sign-card">
+              <label class="field-label" for="f_nome_emissor">Emissor</label>
+              <input class="input" id="f_nome_emissor" required placeholder="Nome do responsável pela emissão">
+              <img id="img_sign_emissor" class="signature-preview" alt="Assinatura do emissor">
+              <button class="btn full-width top-gap" type="button" data-sign="emissor">Assinar emissor</button>
+            </div>
+            <div class="sign-card">
+              <label class="field-label" for="f_nome_sup">Supervisor</label>
+              <input class="input" id="f_nome_sup" required placeholder="Nome do supervisor da área">
+              <img id="img_sign_sup" class="signature-preview" alt="Assinatura do supervisor">
+              <button class="btn full-width top-gap" type="button" data-sign="sup">Assinar supervisor</button>
+            </div>
+          </div>
+        </section>
+
+        <div class="actions">
+          <button class="btn btn-primary" type="button" id="btnDownload">Gerar PDF local</button>
+          <button class="btn btn-secondary" type="button" id="btnDrive">Salvar PDF na nuvem</button>
+        </div>
+
+        <footer class="footer">
+          <div>Desenvolvido por <strong>Jhonantan Cardoso Gonçalves</strong></div>
+          <div><a href="https://wa.me/5548992159791" target="_blank" rel="noopener">WhatsApp: (48) 99215-9791</a></div>
+          <div>V 2.0 © 2026 · Jaguaruna/SC</div>
+        </footer>
+      </form>
+    </main>
+  </section>
+  <section id="viewFormalizacao" class="app-shell view" role="tabpanel" aria-labelledby="tabFormalizacao" hidden>
+    <div class="formalization-shell">
+      <div class="page-heading">
+        <div>
+          <h1 id="formalizacaoTitle">Formalização de Testes</h1>
+          <p class="page-description">Reúna FDS reais, documente o procedimento, revise e envie por e-mail, registre a resposta e consulte o histórico.</p>
+          <div class="save-badges" style="margin-top:10px">
+            <span class="save-badge save-badge--local pending" id="saveLocalBadge">Rascunho não salvo</span>
+            <span class="save-badge save-badge--server pending" id="saveServerBadge">Aguardando sincronização</span>
+          </div>
+        </div>
+        <div class="page-heading-actions">
           <button type="button" class="btn btn-primary" id="btnNewFormalizacao">Nova formalização</button>
         </div>
+      </div>
 
-        <div class="toolbar">
+      <div class="filters formalization-filters" role="search" aria-label="Filtros da lista de formalizações">
+        <div class="field field--search">
           <label class="field-label" for="searchFormalizacao">Buscar</label>
           <input class="input" id="searchFormalizacao" type="search" placeholder="Número, título ou produto">
+        </div>
+        <div class="field field--status">
           <label class="field-label" for="filterStatus">Situação</label>
           <select class="input" id="filterStatus">
             <option value="">Todas</option>
@@ -219,233 +232,264 @@
             <option value="resposta">Resposta registrada</option>
             <option value="arquivado">Arquivado</option>
           </select>
+        </div>
+        <div class="field field--date">
           <label class="field-label" for="filterFrom">De</label>
           <input class="input" id="filterFrom" type="date">
+        </div>
+        <div class="field field--date">
           <label class="field-label" for="filterTo">Até</label>
           <input class="input" id="filterTo" type="date">
         </div>
-
-        <div id="formalizacaoList" class="list-area"></div>
-
-        <form id="formalizacaoForm" class="form-area" hidden>
-          <section class="card">
-            <h2 class="section-title">1. Identificação</h2>
-            <div class="grid">
-              <div>
-                <label class="field-label" for="f_test_number">Número</label>
-                <input class="input" id="f_test_number" type="text" readonly>
-              </div>
-              <div>
-                <label class="field-label" for="f_test_revision">Revisão</label>
-                <input class="input" id="f_test_revision" type="text" value="R0" readonly>
-              </div>
-              <div class="span-2">
-                <label class="field-label" for="f_test_title">Título do teste <span class="required">*</span></label>
-                <input class="input" id="f_test_title" type="text" required>
-              </div>
-              <div>
-                <label class="field-label" for="f_test_requester">Solicitante</label>
-                <input class="input" id="f_test_requester" type="text">
-              </div>
-              <div>
-                <label class="field-label" for="f_test_owner">Responsável pelo registro</label>
-                <input class="input" id="f_test_owner" type="text">
-              </div>
-              <div>
-                <label class="field-label" for="f_test_unit">Unidade/Local</label>
-                <input class="input" id="f_test_unit" type="text">
-              </div>
-              <div>
-                <label class="field-label" for="f_test_responsible">Responsável pelo teste</label>
-                <input class="input" id="f_test_responsible" type="text">
-              </div>
-              <div>
-                <label class="field-label" for="f_test_period">Data ou período previsto</label>
-                <input class="input" id="f_test_period" type="text" placeholder="Ex.: 20/11/2026 ou a definir">
-              </div>
-              <div>
-                <label class="field-label" for="f_test_status">Situação</label>
-                <select class="input" id="f_test_status">
-                  <option value="rascunho">Rascunho</option>
-                  <option value="pronto">Pronto para envio</option>
-                  <option value="enviado">Enviado</option>
-                  <option value="resposta">Resposta registrada</option>
-                  <option value="arquivado">Arquivado</option>
-                </select>
-              </div>
-              <div class="span-2">
-                <label class="field-label" for="f_test_objective">Objetivo</label>
-                <textarea id="f_test_objective" rows="3"></textarea>
-              </div>
-              <div class="span-2">
-                <label class="field-label" for="f_test_notes">Observações</label>
-                <textarea id="f_test_notes" rows="3"></textarea>
-              </div>
-              <div class="span-2">
-                <label class="field-label" for="f_test_pta_link">Vínculo com PTA (opcional)</label>
-                <input class="input" id="f_test_pta_link" type="text" placeholder="Número/ID do PTA relacionado">
-              </div>
-            </div>
-          </section>
-
-          <section class="card">
-            <div class="section-head">
-              <h2 class="section-title">2. Produtos e FDS</h2>
-              <button type="button" class="btn" id="btnAddProduct">+ Adicionar produto</button>
-            </div>
-            <div id="productsContainer" class="stack"></div>
-            <p class="assist-note" id="fdsValidationSummary"></p>
-          </section>
-
-          <section class="card">
-            <h2 class="section-title">3. Procedimento</h2>
-            <div class="grid">
-              <div class="span-2">
-                <label class="field-label" for="f_proc_preparation">Preparação e condições iniciais</label>
-                <textarea id="f_proc_preparation" rows="3"></textarea>
-              </div>
-              <div class="span-2">
-                <label class="field-label" for="f_proc_products">Produtos, quantidades e unidades</label>
-                <textarea id="f_proc_products" rows="3"></textarea>
-              </div>
-              <div class="span-2">
-                <label class="field-label" for="f_proc_equipment">Equipamentos e recursos</label>
-                <textarea id="f_proc_equipment" rows="3"></textarea>
-              </div>
-              <div class="span-2">
-                <label class="field-label" for="f_proc_steps">Sequência das etapas e forma de aplicação</label>
-                <textarea id="f_proc_steps" rows="5"></textarea>
-              </div>
-              <div class="span-2">
-                <label class="field-label" for="f_proc_duration">Duração prevista e acompanhamento</label>
-                <textarea id="f_proc_duration" rows="3"></textarea>
-              </div>
-              <div class="span-2">
-                <label class="field-label" for="f_proc_sampling">Coleta de amostras e avaliação dos resultados</label>
-                <textarea id="f_proc_sampling" rows="3"></textarea>
-              </div>
-              <div class="span-2">
-                <label class="field-label" for="f_proc_safety">Observações de segurança e referências às FDS</label>
-                <textarea id="f_proc_safety" rows="3"></textarea>
-              </div>
-            </div>
-          </section>
-
-          <section class="card">
-            <h2 class="section-title">4. E-mail</h2>
-            <div class="grid">
-              <div class="span-2">
-                <label class="field-label" for="f_email_to">Destinatário</label>
-                <input class="input" id="f_email_to" type="email" placeholder="E-mail da destinatária">
-              </div>
-              <div class="span-2">
-                <label class="field-label" for="f_email_cc">Cópias</label>
-                <input class="input" id="f_email_cc" type="text" placeholder="Separe por vírgula">
-              </div>
-              <div class="span-2">
-                <label class="field-label" for="f_email_reply">Endereço de resposta</label>
-                <input class="input" id="f_email_reply" type="email">
-              </div>
-              <div class="span-2">
-                <label class="field-label" for="f_email_subject">Assunto</label>
-                <input class="input" id="f_email_subject" type="text">
-              </div>
-              <div class="span-2">
-                <label class="field-label" for="f_email_body">Corpo da mensagem</label>
-                <textarea id="f_email_body" rows="8"></textarea>
-              </div>
-            </div>
-            <div class="actions">
-              <button type="button" class="btn" id="btnReviewEmail">Revisar e-mail</button>
-              <button type="button" class="btn btn-primary" id="btnSendEmail">Enviar e-mail</button>
-            </div>
-            <div id="emailReview" class="review-box" hidden></div>
-          </section>
-
-          <section class="card">
-            <h2 class="section-title">5. Histórico</h2>
-            <div id="historyList" class="history-list"></div>
-          </section>
-
-          <div class="actions">
-            <button type="button" class="btn" id="btnSaveDraft">Salvar rascunho</button>
-            <button type="button" class="btn" id="btnPreviewPdf">Pré-visualizar PDF</button>
-            <button type="button" class="btn" id="btnExportDocs">Exportar documentação</button>
-            <button type="button" class="btn btn-red" id="btnRegisterResponse">Registrar resposta</button>
-          </div>
-        </form>
+        <div class="filters-actions">
+          <button type="button" class="btn btn-secondary btn-small" id="btnClearFilters">Limpar filtros</button>
+        </div>
       </div>
-    </main>
+
+      <div id="formalizacaoList" class="list-area" aria-live="polite"></div>
+
+      <form id="formalizacaoForm" class="formalization-editor" hidden novalidate>
+        <section class="card" aria-labelledby="ft-sec-1">
+          <h2 class="section-title" id="ft-sec-1"><span class="section-number" aria-hidden="true">1</span> Identificação</h2>
+          <div class="grid">
+            <div>
+              <label class="field-label" for="f_test_number">Número</label>
+              <input class="input" id="f_test_number" type="text" readonly>
+            </div>
+            <div>
+              <label class="field-label" for="f_test_revision">Revisão</label>
+              <input class="input" id="f_test_revision" type="text" value="R0" readonly>
+            </div>
+            <div class="span-2">
+              <label class="field-label" for="f_test_title">Título do teste <span class="required">*</span></label>
+              <input class="input" id="f_test_title" type="text" required>
+            </div>
+            <div>
+              <label class="field-label" for="f_test_requester">Solicitante</label>
+              <input class="input" id="f_test_requester" type="text">
+            </div>
+            <div>
+              <label class="field-label" for="f_test_owner">Responsável pelo registro</label>
+              <input class="input" id="f_test_owner" type="text">
+            </div>
+            <div>
+              <label class="field-label" for="f_test_unit">Unidade/Local</label>
+              <input class="input" id="f_test_unit" type="text">
+            </div>
+            <div>
+              <label class="field-label" for="f_test_responsible">Responsável pelo teste</label>
+              <input class="input" id="f_test_responsible" type="text">
+            </div>
+            <div>
+              <label class="field-label" for="f_test_period">Data ou período previsto</label>
+              <input class="input" id="f_test_period" type="text" placeholder="Ex.: 20/11/2026 ou a definir">
+            </div>
+            <div>
+              <label class="field-label" for="f_test_status">Situação</label>
+              <select class="input" id="f_test_status">
+                <option value="rascunho">Rascunho</option>
+                <option value="pronto">Pronto para envio</option>
+                <option value="enviado">Enviado</option>
+                <option value="resposta">Resposta registrada</option>
+                <option value="arquivado">Arquivado</option>
+              </select>
+            </div>
+            <div class="span-2">
+              <label class="field-label" for="f_test_objective">Objetivo</label>
+              <textarea id="f_test_objective" rows="3"></textarea>
+            </div>
+            <div class="span-2">
+              <label class="field-label" for="f_test_notes">Observações</label>
+              <textarea id="f_test_notes" rows="3"></textarea>
+            </div>
+            <div class="span-2">
+              <label class="field-label" for="f_test_pta_link">Vínculo com PTA (opcional)</label>
+              <input class="input" id="f_test_pta_link" type="text" placeholder="Número/ID do PTA relacionado">
+            </div>
+          </div>
+        </section>
+        <section class="card" aria-labelledby="ft-sec-2">
+          <div class="section-head">
+            <h2 class="section-title" id="ft-sec-2"><span class="section-number" aria-hidden="true">2</span> Produtos e FDS</h2>
+            <button type="button" class="btn" id="btnAddProduct">+ Adicionar produto</button>
+          </div>
+          <div id="productsContainer" class="formalization-products" aria-live="polite"></div>
+          <p class="assist-note" id="fdsValidationSummary"></p>
+        </section>
+
+        <section class="card" aria-labelledby="ft-sec-3">
+          <h2 class="section-title" id="ft-sec-3"><span class="section-number" aria-hidden="true">3</span> Procedimento</h2>
+          <div class="grid">
+            <div class="span-2">
+              <label class="field-label" for="f_proc_preparation">Preparação e condições iniciais</label>
+              <textarea id="f_proc_preparation" rows="3"></textarea>
+            </div>
+            <div class="span-2">
+              <label class="field-label" for="f_proc_products">Produtos, quantidades e unidades</label>
+              <textarea id="f_proc_products" rows="3"></textarea>
+            </div>
+            <div class="span-2">
+              <label class="field-label" for="f_proc_equipment">Equipamentos e recursos</label>
+              <textarea id="f_proc_equipment" rows="3"></textarea>
+            </div>
+            <div class="span-2">
+              <label class="field-label" for="f_proc_steps">Sequência das etapas e forma de aplicação</label>
+              <textarea id="f_proc_steps" rows="5"></textarea>
+            </div>
+            <div class="span-2">
+              <label class="field-label" for="f_proc_duration">Duração prevista e acompanhamento</label>
+              <textarea id="f_proc_duration" rows="3"></textarea>
+            </div>
+            <div class="span-2">
+              <label class="field-label" for="f_proc_sampling">Coleta de amostras e avaliação dos resultados</label>
+              <textarea id="f_proc_sampling" rows="3"></textarea>
+            </div>
+            <div class="span-2">
+              <label class="field-label" for="f_proc_safety">Observações de segurança e referências às FDS</label>
+              <textarea id="f_proc_safety" rows="3"></textarea>
+            </div>
+          </div>
+        </section>
+        <section class="card" aria-labelledby="ft-sec-4">
+          <h2 class="section-title" id="ft-sec-4"><span class="section-number" aria-hidden="true">4</span> E-mail</h2>
+          <div class="grid">
+            <div class="span-2">
+              <label class="field-label" for="f_email_to">Destinatário</label>
+              <input class="input" id="f_email_to" type="email" placeholder="E-mail da destinatária">
+            </div>
+            <div class="span-2">
+              <label class="field-label" for="f_email_cc">Cópias</label>
+              <input class="input" id="f_email_cc" type="text" placeholder="Separe por vírgula">
+            </div>
+            <div class="span-2">
+              <label class="field-label" for="f_email_reply">Endereço de resposta</label>
+              <input class="input" id="f_email_reply" type="email">
+            </div>
+            <div class="span-2">
+              <label class="field-label" for="f_email_subject">Assunto</label>
+              <input class="input" id="f_email_subject" type="text">
+            </div>
+            <div class="span-2">
+              <label class="field-label" for="f_email_body">Corpo da mensagem</label>
+              <textarea id="f_email_body" rows="8"></textarea>
+            </div>
+          </div>
+          <div class="actions" style="margin-top:14px">
+            <button type="button" class="btn" id="btnReviewEmail">Revisar e-mail</button>
+          </div>
+          <div id="emailReview" class="review-box" hidden></div>
+        </section>
+
+        <section class="card" aria-labelledby="ft-sec-5">
+          <h2 class="section-title" id="ft-sec-5"><span class="section-number" aria-hidden="true">5</span> Histórico</h2>
+          <div id="communicationsList" class="formalization-communications" aria-live="polite"></div>
+          <div id="historyList" class="formalization-history"></div>
+        </section>
+
+        <div class="actions">
+          <button type="button" class="btn btn-primary" id="btnSaveDraft">Salvar rascunho</button>
+          <button type="button" class="btn" id="btnPreviewPdf">Pré-visualizar PDF</button>
+          <button type="button" class="btn" id="btnExportDocs">Exportar documentação</button>
+          <button type="button" class="btn btn-secondary" id="btnRegisterResponse">Registrar resposta</button>
+          <button type="button" class="btn btn-link" id="btnBackToList">Voltar para a lista</button>
+        </div>
+      </form>
+    </div>
   </section>
 
-  <div id="toast" class="toast" role="status"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <div id="signModal" class="modal" aria-hidden="true">
+  <div id="signModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="signModalTitle">
     <div class="modal-card">
-      <h2 class="modal-title">Assinatura digital</h2>
-      <canvas id="signatureCanvas" class="signature-canvas"></canvas>
+      <h2 class="modal-title" id="signModalTitle">Assinatura digital</h2>
+      <canvas id="signatureCanvas" class="signature-canvas" aria-label="Área para desenhar a assinatura"></canvas>
       <div class="modal-actions">
         <button class="btn" type="button" id="btnCloseSign">Voltar</button>
-        <button class="btn btn-red" type="button" id="btnClearSign">Limpar</button>
+        <button class="btn btn-danger" type="button" id="btnClearSign">Limpar</button>
         <button class="btn btn-primary" type="button" id="btnSaveSign">Confirmar</button>
       </div>
     </div>
   </div>
-
-  <div id="pdfTemplate" aria-hidden="true">
-    <div class="pdf-header">
-      <img class="pdf-logo" src="assets/srf-logo.svg?v=1.8" alt="Logo Grupo SRF">
-      <div class="pdf-brand">
-        <h1>GRUPO SRF</h1>
-        <h2>PERMISSÃO DE TRABALHO EM ALTURA (PTA) - NR-35 | V 1.8</h2>
-      </div>
+  <div id="accessGate" class="gate" hidden role="dialog" aria-modal="true" aria-labelledby="accessGateTitle">
+    <div class="gate-card">
+      <div class="gate-emblem" aria-hidden="true">🔒</div>
+      <h2 id="accessGateTitle">Acesso ao sistema</h2>
+      <p>Informe a chave de acesso configurada pelo administrador para continuar.</p>
+      <p id="accessGateMessage" class="gate-hint" role="status" hidden></p>
+      <form id="accessGateForm">
+        <label class="field-label" for="accessGateInput">Chave de acesso</label>
+        <input class="input" id="accessGateInput" type="password" autocomplete="off" minlength="8" required>
+        <p id="accessGateError" class="gate-error" hidden></p>
+        <button class="btn btn-primary full-width" type="submit">Continuar</button>
+      </form>
     </div>
-
-    <table class="pdf-table">
-      <tr><th colspan="4">1. IDENTIFICAÇÃO BÁSICA</th></tr>
-      <tr>
-        <td width="25%"><strong>Emissão:</strong> <span id="p_emissao"></span></td>
-        <td width="25%"><strong>Término:</strong> <span id="p_termino"></span></td>
-        <td width="25%"><strong>Mão de Obra:</strong> <span id="p_obra"></span></td>
-        <td width="25%"><strong>Qtd. Profissionais:</strong> <span id="p_qtd"></span></td>
-      </tr>
-    </table>
-
-    <table class="pdf-table" id="p_tabela_equipe"></table>
-
-    <table class="pdf-table">
-      <tr><th colspan="2">2. DADOS DA ATIVIDADE</th></tr>
-      <tr>
-        <td width="55%"><strong>Local:</strong> <span id="p_local"></span></td>
-        <td><strong>Altura Aprox.:</strong> <span id="p_altura"></span> m</td>
-      </tr>
-      <tr><td colspan="2"><strong>Tarefa:</strong> <span id="p_tarefa"></span></td></tr>
-    </table>
-
-    <table class="pdf-table">
-      <tr><th colspan="2">3. SEGURANÇA E CLIMA</th></tr>
-      <tr><td width="22%"><strong>Clima:</strong></td><td id="p_clima"></td></tr>
-      <tr><td><strong>EPIs verificados:</strong></td><td id="p_epi"></td></tr>
-      <tr><td><strong>EPCs instalados:</strong></td><td id="p_epc"></td></tr>
-    </table>
-
-    <table class="pdf-table">
-      <tr><th width="80%">4. CHECKLIST DE VERIFICAÇÃO</th><th>STATUS</th></tr>
-      <tbody id="p_checklist"></tbody>
-    </table>
-
-    <table class="pdf-table">
-      <tr><th>5. RISCOS E PLANO DE RESGATE</th></tr>
-      <tr><td><strong>Riscos e medidas:</strong><br><span id="p_riscos" class="pre-wrap"></span></td></tr>
-      <tr><td><strong>Plano de resgate/observações:</strong><br><span id="p_obs" class="pre-wrap"></span></td></tr>
-    </table>
-
-    <div id="p_assinaturas" class="pdf-signatures"></div>
-    <div class="pdf-dev">Desenvolvido por Jhonantan Cardoso Gonçalves · WhatsApp (48) 99215-9791 · Versão 1.8</div>
   </div>
 
-  <script src="assets/app-v1.8.js?v=1.8" defer></script>
-  <script src="assets/formalizacao.js?v=1.5" defer></script>
+  <div id="conflictModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="conflictModalTitle">
+    <div class="modal-card">
+      <h2 class="modal-title" id="conflictModalTitle">Conflito de versão detectado</h2>
+      <p>Outro dispositivo salvou esta formalização depois da sua última sincronização. Versão no sistema: <strong id="conflictServerVersion">?</strong>.</p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" id="btnConflictKeepBoth">Manter as duas cópias</button>
+        <button type="button" class="btn btn-secondary" id="btnConflictReload">Carregar versão do servidor</button>
+        <button type="button" class="btn btn-danger" id="btnConflictOverwrite">Sobrescrever no servidor</button>
+      </div>
+      <p class="note">Recomendado: "Manter as duas cópias" preserva o trabalho local sem perder o que está salvo no sistema.</p>
+    </div>
+  </div>
+
+  <div id="responseModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="responseModalTitle">
+    <div class="modal-card">
+      <h2 class="modal-title" id="responseModalTitle">Registrar resposta</h2>
+      <form id="responseForm" class="response-modal-grid">
+        <div class="field field-row">
+          <label class="field-label" for="responseCommunication">Comunicação (envio) relacionada</label>
+          <select class="input" id="responseCommunication" required></select>
+          <p class="note">Selecione o envio ao qual esta resposta se refere.</p>
+        </div>
+        <div class="field field-row">
+          <label class="field-label" for="responseReceivedAt">Data/hora de recebimento</label>
+          <input class="input" id="responseReceivedAt" type="datetime-local">
+          <p class="note">Deixe vazio quando a data real da mensagem não for conhecida — nunca usamos "agora" automaticamente.</p>
+        </div>
+        <div class="field field-row">
+          <label class="field-label" for="responseSender">Remetente</label>
+          <input class="input" id="responseSender" type="text" placeholder="Nome &lt;e-mail&gt;">
+        </div>
+        <div class="field field-row">
+          <label class="field-label" for="responseContent">Conteúdo da resposta</label>
+          <textarea class="input" id="responseContent" rows="5" placeholder="Copie o texto da resposta ou digite um resumo fiel"></textarea>
+        </div>
+        <div class="field field-row">
+          <label class="field-label" for="responseFile">Arquivo original (.eml ou PDF)</label>
+          <input class="input" id="responseFile" type="file" accept=".eml,.pdf,application/pdf,message/rfc822">
+        </div>
+        <label class="response-transcription">
+          <input type="checkbox" id="responseManual"> Transcrição manual (digitei o conteúdo; não é o arquivo original)
+        </label>
+        <p id="responseError" class="note note--danger" hidden></p>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="btnResponseCancel">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btnResponseSubmit">Registrar resposta</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="docViewModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="docViewTitle">
+    <div class="modal-card">
+      <h2 class="modal-title" id="docViewTitle">Documento</h2>
+      <div id="docViewBody" class="doc-view-frame"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" id="btnDocDownload">Baixar original</button>
+        <button type="button" class="btn btn-primary" id="btnDocClose">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/app-core.js?v=2.0" defer></script>
+  <script src="assets/app-v1.8.js?v=2.0" defer></script>
+  <script src="assets/formalizacao.js?v=2.0" defer></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

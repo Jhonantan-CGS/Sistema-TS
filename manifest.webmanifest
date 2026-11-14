@@ -5,8 +5,8 @@
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#1A1C1E",
-  "theme_color": "#10261c",
+  "background_color": "#111715",
+  "theme_color": "#111715",
   "icons": [
     {
       "src": "assets/srf-logo.svg",

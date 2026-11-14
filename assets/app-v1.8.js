@@ -1,9 +1,7 @@
 'use strict';
 
-const APP_VERSION = '1.8';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFvLj8wq2gY0enpCiKPWewVpcj_LVWrt9w06Rz2wA582ZY0_GUWxr-gHDUMIQynbmv/exec';
-const APP_ID = 'PTA_GRUPO_SRF';
-const AI_TIMEOUT_MS = 30000;
+const APP_VERSION = '2.0';
+const AI_TIMEOUT_MS = 45000;
 
 const checklistItems = [
   'Isolamento da área de projeção de queda',
@@ -102,23 +100,36 @@ function addWorker() {
   card.className = 'worker-card';
   card.id = `worker_${id}`;
   card.innerHTML = `
-    <span class="worker-badge">TRABALHADOR ${id}</span>
-    <div class="grid">
-      <input class="input" id="w_nome_${id}" required placeholder="Nome completo">
-      <input class="input" id="w_func_${id}" required placeholder="Função">
-      <input class="input" id="w_cpf_${id}" required placeholder="CPF/Matrícula">
-      <div class="grid">
+    <span class="worker-badge">TRABALHADOR ${String(id).padStart(2, '0')}</span>
+    <div class="worker-grid">
+      <div class="wg-span-6">
+        <label class="field-label" for="w_nome_${id}">Nome completo</label>
+        <input class="input" id="w_nome_${id}" required placeholder="Nome completo">
+      </div>
+      <div class="wg-span-3">
+        <label class="field-label" for="w_func_${id}">Função</label>
+        <input class="input" id="w_func_${id}" required placeholder="Função">
+      </div>
+      <div class="wg-span-3">
+        <label class="field-label" for="w_cpf_${id}">CPF/Matrícula</label>
+        <input class="input" id="w_cpf_${id}" required placeholder="CPF/Matrícula">
+      </div>
+      <div class="wg-span-3">
+        <label class="field-label" for="w_nr35_${id}">NR-35 válido?</label>
         <select id="w_nr35_${id}" required>
-          <option value="">NR-35 válido?</option><option>Sim</option><option>Não</option>
-        </select>
-        <select id="w_aso_${id}" required>
-          <option value="">ASO apto?</option><option>Sim</option><option>Não</option>
+          <option value="">Selecione</option><option>Sim</option><option>Não</option>
         </select>
       </div>
-      <div class="span-2 worker-actions">
+      <div class="wg-span-3">
+        <label class="field-label" for="w_aso_${id}">ASO apto?</label>
+        <select id="w_aso_${id}" required>
+          <option value="">Selecione</option><option>Sim</option><option>Não</option>
+        </select>
+      </div>
+      <div class="wg-span-6 worker-actions">
         <button class="btn" type="button" data-sign="w_${id}">Assinar trabalhador</button>
-        <img id="img_sign_w_${id}" class="signature-preview" alt="Assinatura do trabalhador">
-        <button class="btn btn-red" type="button" data-remove-worker="${id}">Remover</button>
+        <img id="img_sign_w_${id}" class="signature-preview" alt="Assinatura do trabalhador ${id}">
+        <button class="btn btn-danger" type="button" data-remove-worker="${id}">Remover</button>
       </div>
     </div>`;
   $('workers').appendChild(card);
@@ -163,14 +174,12 @@ function pointFromEvent(event) {
 
 function openSignModal(id) {
   activeSignId = id;
-  $('signModal').classList.add('visible');
-  $('signModal').setAttribute('aria-hidden', 'false');
+  $('signModal').hidden = false;
   requestAnimationFrame(resizeSignatureCanvas);
 }
 
 function closeSignModal() {
-  $('signModal').classList.remove('visible');
-  $('signModal').setAttribute('aria-hidden', 'true');
+  $('signModal').hidden = true;
   drawing = false;
   lastPoint = null;
 }
@@ -204,22 +213,6 @@ function saveSignature() {
   closeSignModal();
 }
 
-function getClientId() {
-  const key = 'pta_srf_client_id';
-  try {
-    let id = localStorage.getItem(key);
-    if (!id) {
-      id = typeof crypto?.randomUUID === 'function'
-        ? crypto.randomUUID()
-        : `client_${Date.now()}_${Math.random().toString(36).slice(2, 14)}`;
-      localStorage.setItem(key, id);
-    }
-    return id;
-  } catch (_) {
-    return `session_${Date.now()}_${Math.random().toString(36).slice(2, 14)}`;
-  }
-}
-
 function checklistSummary() {
   return checklistItems.map((item, index) => `${item}: ${radioValue(`chk_${index}`) || 'Não informado'}`).join(' | ');
 }
@@ -237,38 +230,8 @@ function collectAiContext() {
 }
 
 async function postBackend(payload, timeoutMs = AI_TIMEOUT_MS) {
-  if (!APPS_SCRIPT_URL.startsWith('https://script.google.com/')) {
-    throw new Error('URL do Apps Script inválida.');
-  }
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      headers: {'Content-Type': 'text/plain;charset=utf-8'},
-      body: JSON.stringify({...payload, appId: APP_ID, clientId: getClientId(), version: APP_VERSION}),
-      signal: controller.signal,
-      cache: 'no-store'
-    });
-    const text = await response.text();
-    let result;
-    try {
-      result = JSON.parse(text);
-    } catch (_) {
-      throw new Error('Resposta inválida do servidor.');
-    }
-    if (!response.ok || result.status !== 'success') {
-      const error = new Error(result.message || `Servidor HTTP ${response.status}`);
-      error.code = result.code || 'BACKEND_ERROR';
-      throw error;
-    }
-    return result;
-  } catch (error) {
-    if (error.name === 'AbortError') throw new Error('Tempo limite da integração excedido.');
-    throw error;
-  } finally {
-    clearTimeout(timer);
-  }
+  const { action, ...rest } = payload;
+  return window.AppCore.api(action, rest, { timeoutMs });
 }
 
 function analyzeKeywords(text) {
@@ -453,108 +416,174 @@ function validateForm() {
   return true;
 }
 
-function fillPdfTemplate() {
-  const formatDate = (date, time) => date ? `${date.split('-').reverse().join('/')} às ${time}` : '';
-  $('p_emissao').textContent = formatDate($('f_emissao_data').value, $('f_emissao_hora').value);
-  $('p_termino').textContent = formatDate($('f_termino_data').value, $('f_termino_hora').value);
-  $('p_obra').textContent = radioValue('f_mao_obra');
-  const validWorkers = getValidWorkers();
-  $('p_qtd').textContent = validWorkers.length;
-  $('p_tabela_equipe').innerHTML = `<tr><th colspan="5">PROFISSIONAIS LIBERADOS</th></tr><tr><th width="30%">NOME</th><th width="20%">FUNÇÃO</th><th width="25%">CPF/MATRÍCULA</th><th width="10%">NR-35</th><th width="15%">ASO APTO</th></tr>${validWorkers.map(worker => `<tr><td>${escapeHtml(worker.nome)}</td><td>${escapeHtml(worker.func)}</td><td>${escapeHtml(worker.cpf)}</td><td>${escapeHtml(worker.nr)}</td><td>${escapeHtml(worker.aso)}</td></tr>`).join('')}`;
-  $('p_local').textContent = $('f_ativ_local').value;
-  $('p_altura').textContent = $('f_ativ_altura').value;
-  $('p_tarefa').textContent = $('f_ativ_desc').value;
-  $('p_clima').textContent = checkedValues('chk_clima', 'f_clima_outro') || 'Não informado';
-  $('p_epi').textContent = checkedValues('chk_epis', 'f_epi_outro');
-  $('p_epc').textContent = checkedValues('chk_epcs', 'f_epc_outro');
-  $('p_checklist').innerHTML = checklistItems.map((item, index) => `<tr><td>${escapeHtml(item)}</td><td style="text-align:center;font-weight:bold">${escapeHtml(radioValue(`chk_${index}`))}</td></tr>`).join('');
-  $('p_riscos').textContent = $('f_riscos_medidas').value;
-  $('p_obs').textContent = $('f_observacoes').value;
-  const signBoxes = [];
-  validWorkers.forEach(worker => {
-    if (savedSigns[`w_${worker.id}`]) {
-      signBoxes.push(`<div class="pdf-sign-box"><img class="pdf-sign-img" src="${savedSigns[`w_${worker.id}`]}"><strong>Trabalhador Autorizado</strong><br>${escapeHtml(worker.nome)}</div>`);
-    }
-  });
-  signBoxes.push(`<div class="pdf-sign-box"><img class="pdf-sign-img" src="${savedSigns.emissor}"><strong>Resp. Emissão (SST)</strong><br>${escapeHtml($('f_nome_emissor').value)}</div>`);
-  signBoxes.push(`<div class="pdf-sign-box"><img class="pdf-sign-img" src="${savedSigns.sup}"><strong>Supervisor de Área</strong><br>${escapeHtml($('f_nome_sup').value)}</div>`);
-  $('p_assinaturas').innerHTML = signBoxes.join('');
-  return validWorkers;
-}
-
-function loadScript(url) {
-  return new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = url;
-    script.async = true;
-    script.onload = resolve;
-    script.onerror = () => reject(new Error(`Falha ao carregar ${url}`));
-    document.head.appendChild(script);
-  });
-}
-
-async function loadWithFallback(urls, check) {
-  if (check()) return;
-  let lastError;
-  for (const url of urls) {
-    try {
-      await loadScript(url);
-      if (check()) return;
-    } catch (error) {
-      lastError = error;
-    }
-  }
-  throw lastError || new Error('Biblioteca indisponível');
-}
+const pdfSafe = value => String(value ?? '')
+  .replace(/[—–]/g, '-')
+  .replace(/[“”]/g, '"')
+  .replace(/[‘’]/g, "'");
 
 async function ensurePdfLibraries() {
-  await loadWithFallback([
-    'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
-    'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'
-  ], () => typeof window.html2canvas === 'function');
-  await loadWithFallback([
-    'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
-    'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js'
-  ], () => Boolean(window.jspdf?.jsPDF));
+  if (!window.jspdf?.jsPDF) {
+    await loadScript('./assets/vendor/jspdf.umd.min.js');
+  }
+  if (!window.jspdf?.jsPDF?.API?.autoTable) {
+    await loadScript('./assets/vendor/jspdf.plugin.autotable.min.js');
+  }
+}
+
+function pdfDateTime(date, time) {
+  if (!date) return '';
+  return `${date.split('-').reverse().join('/')}${time ? ` ${time}` : ''}`;
+}
+
+function autoTableBlock(pdf, y, head, body, options = {}) {
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const margin = 14;
+  pdf.autoTable(Object.assign({
+    startY: y,
+    margin: { left: margin, right: margin },
+    head,
+    body,
+    theme: 'grid',
+    headStyles: { fillColor: [34, 44, 39], textColor: [244, 247, 245], fontStyle: 'bold', fontSize: 9, cellPadding: 2.6 },
+    styles: { font: 'helvetica', fontSize: 9, cellPadding: 2.6, overflow: 'linebreak', textColor: [17, 23, 21] },
+    tableWidth: 'auto',
+    columnStyles: { 0: { cellWidth: 'auto' } },
+  }, options));
+  return pdf.lastAutoTable.finalY + 6;
+}
+
+function pdfBrandHeader(pdf) {
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const margin = 14;
+  pdf.setFillColor(17, 23, 21);
+  pdf.rect(0, 0, pageWidth, 24, 'F');
+  pdf.setTextColor(244, 247, 245);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(16);
+  pdf.text('GRUPO SRF', margin, 10);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(8);
+  pdf.text('PERMISSAO DE TRABALHO EM ALTURA (PTA) - NR-35', margin, 16);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text(`V ${APP_VERSION}`, pageWidth - margin, 10, { align: 'right' });
+  pdf.setTextColor(0, 0, 0);
+  return 32;
+}
+
+function drawSignatureBoxes(pdf, startY, entries) {
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const margin = 14;
+  const boxWidth = 78;
+  const boxHeight = 30;
+  const columnGap = pageWidth - margin * 2 - boxWidth * 2;
+  let column = 0;
+  let rowStartY = startY;
+  pdf.setFontSize(9);
+  for (const entry of entries) {
+    if (rowStartY + boxHeight > pageHeight - (margin + 4)) {
+      pdf.addPage();
+      rowStartY = margin + 4;
+    }
+    const x = margin + column * (boxWidth + columnGap);
+    pdf.setDrawColor(140);
+    pdf.rect(x, rowStartY, boxWidth, boxHeight - 8, 'S');
+    try {
+      pdf.addImage(entry.data, 'PNG', x + 3, rowStartY + 2, boxWidth - 6, boxHeight - 14);
+    } catch (_) { /* assinatura inválida: mantém a caixa */ }
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(8.5);
+    pdf.text(pdfSafe(entry.label || 'Sem nome'), x, rowStartY + boxHeight - 5);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(7);
+    pdf.setTextColor(90);
+    pdf.text(pdfSafe(entry.caption || ''), x, rowStartY + boxHeight - 1.5);
+    pdf.setTextColor(0);
+    column += 1;
+    if (column === 2) {
+      column = 0;
+      rowStartY += boxHeight + 6;
+    }
+  }
+  return rowStartY + (column === 2 ? 0 : boxHeight + 4);
 }
 
 async function renderPdf() {
   await ensurePdfLibraries();
-  fillPdfTemplate();
-  await Promise.all(qa('#pdfTemplate img').map(image => image.complete ? Promise.resolve() : new Promise(resolve => {
-    image.onload = resolve;
-    image.onerror = resolve;
-  })));
-  const template = $('pdfTemplate');
-  template.style.left = '0';
-  try {
-    const canvas = await window.html2canvas(template, {
-      scale: 2.5,
-      useCORS: true,
-      backgroundColor: '#ffffff',
-      logging: false,
-      imageTimeout: 15000
-    });
-    const {jsPDF} = window.jspdf;
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const imageHeight = canvas.height * pageWidth / canvas.width;
-    const imageData = canvas.toDataURL('image/jpeg', 0.94);
-    let remaining = imageHeight;
-    let position = 0;
-    pdf.addImage(imageData, 'JPEG', 0, position, pageWidth, imageHeight);
-    remaining -= pageHeight;
-    while (remaining > 0) {
-      position = remaining - imageHeight;
-      pdf.addPage();
-      pdf.addImage(imageData, 'JPEG', 0, position, pageWidth, imageHeight);
-      remaining -= pageHeight;
+  const validWorkers = getValidWorkers();
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const margin = 14;
+  let y = pdfBrandHeader(pdf);
+
+  y = autoTableBlock(pdf, y, [
+    [{ content: '1. IDENTIFICAÇÃO BÁSICA', colSpan: 4 }],
+  ], [[
+    `Emissão: ${pdfSafe(pdfDateTime($('f_emissao_data').value, $('f_emissao_hora').value) || 'Não informada')}`,
+    `Término: ${pdfSafe(pdfDateTime($('f_termino_data').value, $('f_termino_hora').value) || 'Não informado')}`,
+    `Mão de Obra: ${pdfSafe(radioValue('f_mao_obra') || 'Não informada')}`,
+    `Qtd. Profissionais: ${validWorkers.length}`,
+  ]]);
+
+  const teamRows = validWorkers.length
+    ? validWorkers.map(worker => [pdfSafe(worker.nome), pdfSafe(worker.func), pdfSafe(worker.cpf), pdfSafe(worker.nr), pdfSafe(worker.aso)])
+    : [[{ content: 'Nenhum trabalhador informado', colSpan: 5 }]];
+  y = autoTableBlock(pdf, y, [
+    [{ content: '2. PROFISSIONAIS LIBERADOS', colSpan: 5 }],
+    ['Nome', 'Função', 'CPF/Matrícula', 'NR-35', 'ASO APTO'],
+  ], teamRows);
+
+  y = autoTableBlock(pdf, y, [
+    [{ content: '3. DADOS DA ATIVIDADE', colSpan: 2 }],
+  ], [
+    [pdfSafe(`Local: ${$('f_ativ_local').value || 'Não informado'}`), pdfSafe(`Altura Aproximada: ${$('f_ativ_altura').value || '0'} m`)],
+    [{ content: pdfSafe(`Tarefa: ${$('f_ativ_desc').value || 'Não informada'}`), colSpan: 2 }],
+  ]);
+
+  y = autoTableBlock(pdf, y, [
+    [{ content: '4. SEGURANÇA E CLIMA', colSpan: 2 }],
+  ], [
+    [{ content: 'Clima', styles: { fontStyle: 'bold' } }, pdfSafe(checkedValues('chk_clima', 'f_clima_outro') || 'Não informado')],
+    [{ content: 'EPIs verificados', styles: { fontStyle: 'bold' } }, pdfSafe(checkedValues('chk_epis', 'f_epi_outro') || 'Não informado')],
+    [{ content: 'EPCs instalados', styles: { fontStyle: 'bold' } }, pdfSafe(checkedValues('chk_epcs', 'f_epc_outro') || 'Não informado')],
+  ]);
+
+  y = autoTableBlock(pdf, y, [
+    [{ content: '5. CHECKLIST DE VERIFICAÇÃO', colSpan: 2 }],
+  ], checklistItems.map((item, index) => [pdfSafe(item), pdfSafe(radioValue(`chk_${index}`) || 'Não informado')]), {
+    columnStyles: { 0: { cellWidth: 'auto' }, 1: { halign: 'center', fontStyle: 'bold', cellWidth: 32 } },
+  });
+
+  y = autoTableBlock(pdf, y, [
+    [{ content: '6. RISCOS E PLANO DE RESGATE', colSpan: 1 }],
+  ], [
+    [pdfSafe(`Riscos e medidas:\n${$('f_riscos_medidas').value || 'Não informado'}`)],
+    [pdfSafe(`Plano de resgate / observações:\n${$('f_observacoes').value || 'Não informado'}`)],
+  ], { columnStyles: { 0: { cellWidth: pageWidth - margin * 2 } }, styles: { cellPadding: 3.4 } });
+
+  const signatureEntries = [];
+  validWorkers.forEach(worker => {
+    if (savedSigns[`w_${worker.id}`]) {
+      signatureEntries.push({ label: worker.nome, caption: `Trabalhador Autorizado (${worker.func || 'função não informada'})`, data: savedSigns[`w_${worker.id}`] });
     }
-    return pdf;
-  } finally {
-    template.style.left = '-10000px';
+  });
+  signatureEntries.push({ label: $('f_nome_emissor').value, caption: 'Resp. Emissão (SST)', data: savedSigns.emissor });
+  signatureEntries.push({ label: $('f_nome_sup').value, caption: 'Supervisor de Área', data: savedSigns.sup });
+  y = drawSignatureBoxes(pdf, y, signatureEntries);
+
+  const pageCount = pdf.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i += 1) {
+    pdf.setPage(i);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(110);
+    pdf.text('Desenvolvido por Jhonantan Cardoso Gonçalves · WhatsApp (48) 99215-9791 · V ' + APP_VERSION, margin, pageHeight - 6);
+    pdf.text(`Página ${i} de ${pageCount}`, pageWidth - margin, pageHeight - 6, { align: 'right' });
+    pdf.setTextColor(0);
   }
+  return pdf;
 }
 
 function pdfFilename() {
