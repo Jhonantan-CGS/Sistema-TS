@@ -1102,6 +1102,23 @@ async function confirmSend() {
       toastForm('O registro mudou desde a revisão. Revise o e-mail novamente.', 'error', 7000);
       return;
     }
+    // A revisão é congelada no momento da revisão do e-mail, nunca entre a revisão e o envio.
+    let bumped = false;
+    try {
+      bumped = await maybeBumpRevision(record);
+    } catch (_) {
+      bumped = false;
+    }
+    if (bumped) {
+      const revisionField = $f('f_test_revision');
+      if (revisionField) revisionField.value = record.revision;
+      try {
+        await dbPut(record);
+      } catch (_) {
+        /* segue em memória */
+      }
+      toastForm('O conteúdo mudou desde a última comunicação. A revisão ' + record.revision + ' foi criada para este envio.', 'info', 6000);
+    }
     const finalHash = await computeContentHash(record);
     const revision = record.revision;
     const idempotencyKey = `send_${record.id}_${revision}_${finalHash.slice(0, 32)}`;
