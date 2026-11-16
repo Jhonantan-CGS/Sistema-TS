@@ -688,3 +688,4 @@ function handleFormalizationResponse(body) {
         lock.releaseLock();
     }
 }
+
