@@ -1102,7 +1102,7 @@ async function confirmSend() {
       toastForm('O registro mudou desde a revisão. Revise o e-mail novamente.', 'error', 7000);
       return;
     }
-    const finalHash = currentHash;
+    const finalHash = await computeContentHash(record);
     const revision = record.revision;
     const idempotencyKey = `send_${record.id}_${revision}_${finalHash.slice(0, 32)}`;
 
